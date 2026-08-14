@@ -1,0 +1,46 @@
+.splash {
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: radial-gradient(circle at 50% 35%, #211d2b 0%, #14121a 70%);
+}
+
+.splash__mark {
+  font-size: clamp(2rem, 9vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f4f1ea;
+  animation: pulse 1.6s ease-in-out infinite;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.splash__bar {
+  width: 120px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(244, 241, 234, 0.15);
+  overflow: hidden;
+}
+
+.splash__bar-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: #7c6cf0;
+  animation: slide 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes slide {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
