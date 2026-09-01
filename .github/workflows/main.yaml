@@ -36,7 +36,7 @@ jobs:
       - name: Tag e Push da Imagem
         run: |
           docker tag fiecpa2026 ${{ secrets.DOCKER_USERNAME }}/HelpTech:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/HelpTech:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/helptech:latest
 
   # Job 3: Rodando na AWS
   deploy-ec2:
@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: Forçar Pull da imagem nova (ignora cache local)
         # O comando pull garante que a imagem no host seja atualizada
-        run: docker pull ${{ secrets.DOCKER_USERNAME }}/HelpTech:latest
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/helptech:latest
 
       - name: Parar e remover container antigo
         # Usamos || true para que o workflow não quebre se o container não existir
@@ -59,4 +59,4 @@ jobs:
             --pull always \
             --name react-app \
             -p 3000:3000\
-            ${{ secrets.DOCKER_USERNAME }}/HelpTech:latest
+            ${{ secrets.DOCKER_USERNAME }}/helptech:latest
