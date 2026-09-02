@@ -38,7 +38,7 @@ jobs:
           docker tag fiecpa2026 ${{ secrets.DOCKER_USERNAME }}/helptech:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/helptech:latest
 
-  # Job 3: Rodando na AWS
+  # Job 3: Rodando na AWS (Windows Runner)
   deploy-ec2:
     runs-on: self-hosted
     needs: docker-build
@@ -46,11 +46,13 @@ jobs:
       - name: Forçar Pull da imagem nova
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/helptech:latest
 
-      - name: Parar e remover container antigo
-        run: |
-          docker stop react-app || true
-          docker rm react-app || true
+      - name: Parar container antigo
+        continue-on-error: true
+        run: docker stop react-app
 
-      - name: Rodar novo container com flag de pull
-        run: |
-          docker run -d --pull always --name react-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/helptech:latest
+      - name: Remover container antigo
+        continue-on-error: true
+        run: docker rm react-app
+
+      - name: Rodar novo container
+        run: docker run -d --name react-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/helptech:latest
