@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # fe
 
 Projeto criado com Vite + React, com Firebase configurado e duas telas: splashscreen e uma tela com botão "Avançar".
