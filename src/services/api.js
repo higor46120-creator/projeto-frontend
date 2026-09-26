@@ -1,57 +1,48 @@
 import axios from 'axios';
 
-/**
- * Serializador de query params customizado.
- *
- * Por padrão, ao enviar um array como parâmetro (ex: { productType: ['A','B'] }),
- * o axios (via `qs`) gera `productType[]=A&productType[]=B`, e o navegador
- * codifica os colchetes como `%5B%5D` — o que gera URLs feias e, em alguns
- * backends (ex: Spring com @RequestParam simples), não é interpretado
- * corretamente.
- *
- * Este serializador:
- *  - ignora chaves com valor null / undefined / string vazia;
- *  - para arrays, repete a chave sem colchetes: `productType=A&productType=B`
- *    (formato aceito por @RequestParam List<T> / String[] no Spring);
- *  - usa URLSearchParams, que já cuida do encoding correto do restante.
- */
-function serializeParams(params) {
-  const searchParams = new URLSearchParams();
+// Base do backend Spring Boot (helptec-backend). Configurada em .env como
+// VITE_API_URL - em dev aponta para http://localhost:8080.
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value === null || value === undefined || value === '') return;
+export const api = axios.create({ baseURL });
 
-    if (Array.isArray(value)) {
-      value
-        .filter((item) => item !== null && item !== undefined && item !== '')
-        .forEach((item) => searchParams.append(key, item));
-      return;
-    }
+const TOKEN_KEY = 'helptec_token';
 
-    searchParams.append(key, value);
-  });
-
-  return searchParams.toString();
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-// Instância base do Axios configurada com a URL do servidor
-const api = axios.create({
-  baseURL: import.meta.env?.VITE_API_URL || 'http://localhost:8080',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  paramsSerializer: {
-    serialize: serializeParams,
-  },
-});
+export function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
 
-// Interceptor para adicionar o token JWT automaticamente em toda requisição
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export const TOKEN_STORAGE_KEY = TOKEN_KEY;
+
+// Anexa "Authorization: Bearer <token>" em toda requisição - é o header que
+// o JwtAuthenticationFilter do backend lê.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-export default api;
+// Se o backend responder 401 (token ausente/expirado/inválido), derruba a
+// sessão local e manda o usuário de volta para o /login.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearToken();
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login?erro=sessao_expirada');
+      }
+    }
+    return Promise.reject(error);
+  },
+);

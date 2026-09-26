@@ -1,11 +1,41 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>meu-projeto</title>
+    <title>HelpTec</title>
+    <meta
+      name="description"
+      content="Streamline help desk operations by allowing employees to easily submit support tickets, enhancing efficiency and response times for issue resolution."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #root {
+        height: 100%;
+      }
+    </style>
+    <script>
+      // Aplica o tema salvo (ou a preferência do sistema) antes do React
+      // montar, evitando o "flash" de tema claro seguido de escuro.
+      (function () {
+        try {
+          var stored = localStorage.getItem('helptec-theme');
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
