@@ -229,7 +229,14 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/chamados" element={<ChamadosPage />} />
+          <Route
+            path="/chamados"
+            element={
+              <PrivateRoute>
+                <ChamadosPage />
+              </PrivateRoute>
+            }
+          />
 
           <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
           <Route

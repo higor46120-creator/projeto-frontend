@@ -5,16 +5,16 @@
 // próximo "npm run dev" / "npm run build". Edite o .env e rode de novo:
 //   node scripts/generate-firebase-sw.js
 
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts('');
+importScripts('');
 
 const firebaseConfig = {
-  "apiKey": "\"AIzaSyAf5K-Qwyx7cePz9cH2CaI2-N6yNy4M1l0\",",
-  "authDomain": "\"teste-p2-front.firebaseapp.com\",",
-  "projectId": "\"teste-p2-front\",",
-  "storageBucket": "\"teste-p2-front.firebasestorage.app\",",
-  "messagingSenderId": "\"663885825318\",",
-  "appId": "1:663885825318:web:457079b4c8565da8baede7"
+  apiKey: 'SUA_API_KEY',
+  authDomain: 'SEU_PROJETO.firebaseapp.com',
+  projectId: 'SEU_PROJETO',
+  storageBucket: 'SEU_PROJETO.appspot.com',
+  messagingSenderId: 'SEU_SENDER_ID',
+  appId: 'SEU_APP_ID',
 };
 
 firebase.initializeApp(firebaseConfig);

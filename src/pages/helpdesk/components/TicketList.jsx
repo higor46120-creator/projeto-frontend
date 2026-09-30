@@ -207,11 +207,11 @@ export function TicketList({ tickets, onUpdateTicket }) {
 
         <div className="p-6 space-y-4">
           {tickets.map((ticket) => {
-            const statusColor = COLOR_STYLES[STATUS_COLOR[ticket.status]];
+            const statusColor =
+              COLOR_STYLES[STATUS_COLOR[ticket.status]] ?? COLOR_STYLES.gray;
             const priorityColor =
-              COLOR_STYLES[PRIORITY_COLOR[ticket.prioridade]];
-            const priorityBar =
-              COLOR_STYLES[PRIORITY_COLOR[ticket.prioridade]].bar;
+              COLOR_STYLES[PRIORITY_COLOR[ticket.prioridade]] ?? COLOR_STYLES.gray;
+            const priorityBar = priorityColor.bar;
             return (
               <div
                 key={ticket.id_chamado}

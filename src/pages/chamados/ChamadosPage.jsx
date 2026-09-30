@@ -1,159 +1,179 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ChamadoService } from '../../services/servises';
+// Reaproveita a tela que você já programou (cards, estatísticas, botão de chat)
+import { TicketList } from '../helpdesk/components/TicketList';
+
+// ---------------------------------------------------------------------------
+// Adaptador: o endpoint paginado devolve ChamadoDTO (camelCase + enums como
+// AGUARDANDO_APROVACAO), mas o TicketList espera o formato do resto do app
+// (id_chamado, status "Aberto", prioridade "Alta"...). Convertemos aqui.
+// Se algum campo não aparecer, confira o JSON real na aba Network do navegador
+// e ajuste os nomes abaixo.
+// ---------------------------------------------------------------------------
+const STATUS_LABEL = {
+  AGUARDANDO_APROVACAO: 'Aguardando',
+  APROVADO: 'Aberto',
+  EM_ATENDIMENTO: 'Em Andamento',
+  RESOLVIDO: 'Resolvido',
+  CANCELADO: 'Fechado',
+};
+
+const PRIORIDADE_LABEL = {
+  BAIXA: 'Baixa',
+  MEDIA: 'Média',
+  ALTA: 'Alta',
+  CRITICA: 'Crítica',
+};
+
+// Se o backend mandar um objeto (ex.: sala: { id, nome }), pega só o texto.
+const texto = (valor) =>
+  valor && typeof valor === 'object'
+    ? (valor.nome ?? valor.descricao ?? null)
+    : valor;
+
+function paraTicket(c) {
+  return {
+    ...c,
+    id_chamado: c.idChamado ?? c.id_chamado,
+    status: STATUS_LABEL[c.status] ?? c.status,
+    prioridade: PRIORIDADE_LABEL[c.prioridade] ?? c.prioridade,
+    solicitante_nome:
+      c.solicitanteNome ?? c.solicitante_nome ?? texto(c.solicitante),
+    data_abertura: c.dataAbertura
+      ? new Date(c.dataAbertura).toLocaleDateString('pt-BR')
+      : c.data_abertura,
+    sala: texto(c.sala),
+    equipamento: texto(c.equipamento),
+    cod_patrimonio: c.codPatrimonio ?? c.cod_patrimonio,
+  };
+}
 
 export default function ChamadosPage() {
-  // Estados para os dados e carregamento
   const [chamados, setChamados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estados para paginação (baseado no PageRequestDTO)
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size] = useState(10);
   const [totalPaginas, setTotalPaginas] = useState(0);
   const [totalItens, setTotalItens] = useState(0);
 
-  // Estados para os filtros (baseado no ChamadoFilterDTO)
   const [filtros, setFiltros] = useState({
     termo: '',
     status: '',
-    prioridade: ''
+    prioridade: '',
   });
 
-  // Função para buscar os dados na API
-  const carregarChamados = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const pageRequest = { page, size };
-      
-      // O service vai unir filtros + pageRequest nos query params da requisição
-      const response = await ChamadoService.buscar(filtros, pageRequest);
-      
-      // Mapeando a resposta de acordo com a estrutura PageResponseDTOChamadoDTO
-      const { itens, totalItens, totalPaginas } = response.data;
-      
-      setChamados(itens || []);
-      setTotalItens(totalItens || 0);
-      setTotalPaginas(totalPaginas || 0);
-    } catch (err) {
-      console.error("Erro ao buscar chamados", err);
-      setError("Não foi possível carregar os chamados. Tente novamente mais tarde.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Dispara a busca sempre que a página, tamanho da página ou os filtros mudarem
   useEffect(() => {
+    let cancelado = false; // evita resposta antiga sobrescrever a nova
+
+    async function carregarChamados() {
+      setLoading(true);
+      setError(null);
+      try {
+        // não manda parâmetros vazios (?termo=&status=)
+        const filtrosLimpos = Object.fromEntries(
+          Object.entries(filtros).filter(([, v]) => v !== ''),
+        );
+        const response = await ChamadoService.buscar(filtrosLimpos, {
+          page,
+          size,
+        });
+        if (cancelado) return;
+
+        const { itens, totalItens, totalPaginas } = response.data;
+        setChamados((itens || []).map(paraTicket));
+        setTotalItens(totalItens || 0);
+        setTotalPaginas(totalPaginas || 0);
+      } catch (err) {
+        if (cancelado) return;
+        console.error('Erro ao buscar chamados', err);
+        setError(
+          'Não foi possível carregar os chamados. Tente novamente mais tarde.',
+        );
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
+    }
+
     carregarChamados();
+    return () => {
+      cancelado = true;
+    };
   }, [page, size, filtros]);
 
-  // Manipuladores de eventos
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
-    setFiltros(prev => ({ ...prev, [name]: value }));
-    setPage(0); // Volta para a primeira página ao filtrar
-  };
-
-  const handleNextPage = () => {
-    if (page < totalPaginas - 1) setPage(page + 1);
-  };
-
-  const handlePrevPage = () => {
-    if (page > 0) setPage(page - 1);
+    setFiltros((prev) => ({ ...prev, [name]: value }));
+    setPage(0);
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h2>Lista de Chamados</h2>
-      
-      {/* Barra de Filtros */}
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-        <input
-          type="text"
-          name="termo"
-          placeholder="Buscar descrição..."
-          value={filtros.termo}
-          onChange={handleFiltroChange}
-          style={{ padding: '8px', width: '250px' }}
-        />
-        <select name="status" value={filtros.status} onChange={handleFiltroChange} style={{ padding: '8px' }}>
-          <option value="">Todos os Status</option>
-          <option value="AGUARDANDO_APROVACAO">Aguardando Aprovação</option>
-          <option value="APROVADO">Aprovado</option>
-          <option value="EM_ATENDIMENTO">Em Atendimento</option>
-          <option value="RESOLVIDO">Resolvido</option>
-          <option value="CANCELADO">Cancelado</option>
-        </select>
-      </div>
-
-      {/* Mensagens de estado */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading && <p>Carregando chamados...</p>}
-
-      {/* Tabela de Dados */}
-      {!loading && !error && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f4f4f4', textAlign: 'left' }}>
-              <th style={thStyle}>ID</th>
-              <th style={thStyle}>Descrição</th>
-              <th style={thStyle}>Área</th>
-              <th style={thStyle}>Prioridade</th>
-              <th style={thStyle}>Status</th>
-              <th style={thStyle}>Data Abertura</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chamados.length === 0 ? (
-              <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Nenhum chamado encontrado.</td>
-              </tr>
-            ) : (
-              chamados.map((chamado) => (
-                <tr key={chamado.idChamado} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={tdStyle}>{chamado.idChamado}</td>
-                  <td style={tdStyle}>{chamado.descricao}</td>
-                  <td style={tdStyle}>{chamado.area}</td>
-                  <td style={tdStyle}>{chamado.prioridade}</td>
-                  <td style={tdStyle}>{chamado.status}</td>
-                  <td style={tdStyle}>
-                    {chamado.dataAbertura ? new Date(chamado.dataAbertura).toLocaleDateString('pt-BR') : '-'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      )}
-
-      {/* Paginação */}
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>Total de itens: {totalItens}</span>
-        <div>
-          <button 
-            onClick={handlePrevPage} 
-            disabled={page === 0 || loading}
-            style={btnStyle}
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-3 max-w-6xl">
+          <div className="relative flex-1 min-w-60">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              name="termo"
+              placeholder="Buscar na descrição..."
+              value={filtros.termo}
+              onChange={handleFiltroChange}
+              className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+          <select
+            name="status"
+            value={filtros.status}
+            onChange={handleFiltroChange}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
           >
-            Anterior
-          </button>
-          <span style={{ margin: '0 15px' }}>Página {page + 1} de {totalPaginas || 1}</span>
-          <button 
-            onClick={handleNextPage} 
-            disabled={page >= totalPaginas - 1 || loading}
-            style={btnStyle}
-          >
-            Próxima
-          </button>
+            <option value="">Todos os status</option>
+            <option value="AGUARDANDO_APROVACAO">Aguardando aprovação</option>
+            <option value="APROVADO">Aprovado</option>
+            <option value="EM_ATENDIMENTO">Em atendimento</option>
+            <option value="RESOLVIDO">Resolvido</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
         </div>
-      </div>
+
+        {error && (
+          <p className="max-w-6xl rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        {loading && <p className="text-sm text-gray-500">Carregando chamados...</p>}
+
+        {/* Sua tela de chamados, agora alimentada pela pesquisa */}
+        {!loading && !error && <TicketList tickets={chamados} />}
+
+        {/* Paginação */}
+        <div className="flex max-w-6xl items-center justify-between text-sm text-gray-600">
+          <span>Total de itens: {totalItens}</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 0))}
+              disabled={page === 0 || loading}
+              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 disabled:opacity-40"
+            >
+              <ChevronLeft className="w-4 h-4" /> Anterior
+            </button>
+            <span>
+              Página {page + 1} de {totalPaginas || 1}
+            </span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPaginas - 1 || loading}
+              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 disabled:opacity-40"
+            >
+              Próxima <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
-
-// Estilos embutidos simplificados para o exemplo
-const thStyle = { padding: '12px', borderBottom: '2px solid #ccc' };
-const tdStyle = { padding: '12px' };
-const btnStyle = { padding: '8px 16px', cursor: 'pointer' };
