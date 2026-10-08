@@ -227,7 +227,7 @@ export function TicketList({ tickets, onUpdateTicket }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="text-sm font-semibold text-gray-400">
-                          #{ticket.id_chamado.toString().padStart(4, '0')}
+                          #{String(ticket.id_chamado ?? '').padStart(4, '0')}
                         </span>
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor.badgeBg} ${statusColor.badgeText}`}

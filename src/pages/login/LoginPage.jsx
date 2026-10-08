@@ -1,5 +1,6 @@
 import { AlertCircle } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import fiecLogo from '../../assets/fiec-logo.jpeg';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -9,8 +10,32 @@ const ERROR_MESSAGES = {
   sessao_expirada: 'Sua sessão expirou. Faça login novamente.',
 };
 
+// Login de desenvolvimento (sem backend). Só aparece com `npm run dev` E
+// VITE_DEV_LOGIN=true no .env; nunca entra em build de produção.
+const DEV_LOGIN_ENABLED =
+  import.meta.env.DEV && import.meta.env.VITE_DEV_LOGIN === 'true';
+
+function base64Url(obj) {
+  return btoa(JSON.stringify(obj))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+// JWT falso, sem assinatura válida: serve só para o front ler as claims
+// (sub, id, name). O backend NÃO aceita esse token.
+function createDevToken() {
+  return [
+    base64Url({ alg: 'none', typ: 'JWT' }),
+    base64Url({ sub: 'dev@helptec.local', id: 0, name: 'Usuario Dev' }),
+    'dev',
+  ].join('.');
+}
+
 export function LoginPage() {
   const [searchParams] = useSearchParams();
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const erro = searchParams.get('erro');
   const errorMessage = erro ? ERROR_MESSAGES[erro] || 'Não foi possível entrar.' : '';
 
@@ -18,6 +43,11 @@ export function LoginPage() {
     // Rota gerada automaticamente pelo Spring Security (oauth2Login) no
     // backend - inicia o fluxo de consentimento do Google.
     window.location.assign(`${API_URL}/oauth2/authorization/google`);
+  };
+
+  const handleDevLogin = () => {
+    login(createDevToken());
+    navigate('/', { replace: true });
   };
 
   return (
@@ -76,6 +106,16 @@ export function LoginPage() {
             </svg>
             Entrar com Google
           </button>
+
+          {DEV_LOGIN_ENABLED && (
+            <button
+              type="button"
+              onClick={handleDevLogin}
+              className="w-full mt-3 text-sm font-medium py-2.5 rounded-lg border border-dashed border-purple-400 text-purple-700 hover:bg-purple-50 transition-colors"
+            >
+              Entrar sem backend (modo desenvolvimento)
+            </button>
+          )}
 
           <p className="text-xs text-gray-400 text-center mt-6">
             O acesso é validado pelo backend HelpTec a cada login.

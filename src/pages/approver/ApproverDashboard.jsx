@@ -222,7 +222,7 @@ export function ApproverDashboard({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium text-gray-500">
-                          #{ticket.id_chamado.toString().padStart(4, '0')}
+                          #{String(ticket.id_chamado ?? '').padStart(4, '0')}
                         </span>
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.prioridade)}`}

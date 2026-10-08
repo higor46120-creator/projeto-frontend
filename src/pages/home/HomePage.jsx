@@ -55,20 +55,20 @@ export function HomePage({
         {/* Imagem do modo claro (some no escuro) */}
         <img
           src={bannerImageLight}
-          alt="#EuSouFIEC"
+          alt="HelpTec"
           className="block dark:hidden absolute inset-0 w-full h-full object-cover object-center"
         />
         {/* Imagem do modo escuro (some no claro) */}
         <img
           src={bannerImageDark}
-          alt="#EuSouFIEC"
+          alt="HelpTec"
           className="hidden dark:block absolute inset-0 w-full h-full object-cover object-center"
         />
 
         <div className="relative z-10 w-full min-h-[calc(100vh-4rem)]">
           {/* Links rápidos — flutuando em cards de vidro fosco sobre a foto.
               Posição subida (bottom maior) para ficar logo abaixo do texto
-              "#EuSouFIEC", no lugar onde os botões falsos foram removidos
+              "HelpTec", no lugar onde os botões falsos foram removidos
               da imagem. */}
           <div className="absolute inset-x-0 bottom-[30%] sm:bottom-[32%] md:bottom-[34%] z-20 px-4 sm:px-8 md:px-16">
             <h3 className="sr-only">Links rápidos</h3>

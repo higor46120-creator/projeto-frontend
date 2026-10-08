@@ -28,3 +28,7 @@ dist-ssr
 
 .env
 .env*
+!.env.example
+
+# Firebase
+public/firebase-messaging-sw.js

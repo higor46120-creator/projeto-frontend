@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { api } from './services/api';
 import { LoginPage } from './pages/login/LoginPage';
 import { OAuth2RedirectHandler } from './pages/login/OAuth2RedirectHandler';
@@ -17,6 +25,32 @@ import { CandidatePage } from './pages/candidate/CandidatePage';
 import { FileText, List, ArrowLeft } from 'lucide-react';
 import ChamadosPage from './pages/chamados/ChamadosPage';
 
+// Cada página do portal tem a sua própria URL (ex.: localhost:3000/helpdesk),
+// então dá para digitar o endereço, favoritar, recarregar e usar o botão
+// "voltar" do navegador.
+const PAGE_PATHS = {
+  home: '/',
+  helpdesk: '/helpdesk',
+  approver: '/aprovador',
+  support: '/suporte',
+  management: '/gestao',
+  webmail: '/webmail',
+  candidato: '/candidato',
+};
+const PATH_PAGES = Object.fromEntries(
+  Object.entries(PAGE_PATHS).map(([page, path]) => [path, page]),
+);
+
+// O backend pode devolver a lista de chamados simples ou paginada
+// ({ itens, totalItens, totalPaginas } - mesmo formato usado em /chamados).
+// As telas esperam sempre uma lista, então normalizamos aqui.
+function extractTickets(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.itens)) return data.itens;
+  if (Array.isArray(data?.content)) return data.content;
+  return [];
+}
+
 // Conteúdo do HelpTec depois do login. Fica atrás do PrivateRoute - o
 // usuário autenticado vem do AuthContext (JWT emitido pelo backend), não
 // mais de um e-mail digitado à mão.
@@ -24,7 +58,11 @@ function HelpTecApp() {
   const { user, logout } = useAuth();
   const userEmail = user?.email;
   const [userType, setUserType] = useState('funcionario');
-  const [currentPage, setCurrentPage] = useState('home');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathname = location.pathname.replace(/\/+$/, '') || '/';
+  const currentPage = PATH_PAGES[pathname];
+  const setCurrentPage = (page) => navigate(PAGE_PATHS[page] ?? '/');
   const [activeTab, setActiveTab] = useState('new');
   const [tickets, setTickets] = useState([]);
 
@@ -32,7 +70,7 @@ function HelpTecApp() {
   useEffect(() => {
     api
       .get('/api/chamados')
-      .then((res) => setTickets(res.data))
+      .then((res) => setTickets(extractTickets(res.data)))
       .catch((err) => console.error('Falha ao carregar chamados:', err));
   }, []);
 
@@ -72,6 +110,11 @@ function HelpTecApp() {
       })
       .catch((err) => console.error('Falha ao atualizar chamado:', err));
   };
+
+  // Endereço que não existe no portal: volta para a página inicial.
+  if (!currentPage) {
+    return <Navigate to="/" replace />;
+  }
 
   if (currentPage === 'home') {
     return (
@@ -223,24 +266,35 @@ function HelpTecApp() {
   );
 }
 
+// Fica dentro do BrowserRouter para poder usar o endereço atual como chave
+// de reset do ErrorBoundary.
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <ErrorBoundary resetKey={location.pathname}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/chamados" element={<ChamadosPage />} />
+
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+        <Route
+          path="/*"
+          element={
+            <PrivateRoute>
+              <HelpTecApp />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </ErrorBoundary>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/chamados" element={<ChamadosPage />} />
-
-          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <HelpTecApp />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   );
