@@ -74,11 +74,12 @@ export function ManagementPortal({
     { name: 'Resolvido', value: resolvedTickets, color: '#10B981' },
   ];
   
+  // AQUI: Cores injetadas diretamente na fonte de dados do gráfico
   const priorityData = [
-    { name: 'Baixa', value: tickets.filter((t) => t.prioridade === 'Baixa').length },
-    { name: 'Média', value: tickets.filter((t) => t.prioridade === 'Média').length },
-    { name: 'Alta', value: tickets.filter((t) => t.prioridade === 'Alta').length },
-    { name: 'Crítica', value: tickets.filter((t) => t.prioridade === 'Crítica').length },
+    { name: 'Baixa', value: tickets.filter((t) => t.prioridade === 'Baixa').length, color: '#9CA3AF' },
+    { name: 'Média', value: tickets.filter((t) => t.prioridade === 'Média').length, color: '#3B82F6' },
+    { name: 'Alta', value: tickets.filter((t) => t.prioridade === 'Alta').length, color: '#F97316' },
+    { name: 'Crítica', value: tickets.filter((t) => t.prioridade === 'Crítica').length, color: '#EF4444' },
   ];
   
   const dailyData = [
@@ -304,8 +305,14 @@ export function ManagementPortal({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#8B5CF6" />
+                <Tooltip cursor={{ fill: 'transparent' }} />
+                
+                {/* AQUI: Renderização condicional das cores via componente Cell */}
+                <Bar dataKey="value">
+                  {priorityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -411,7 +418,6 @@ export function ManagementPortal({
                     key={ticket.id_chamado}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {/* APLICAÇÃO 1: Ordem Numérica na Tabela */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {obterIdSequencial(ticket, tickets)}
                     </td>
@@ -435,7 +441,6 @@ export function ManagementPortal({
                         {ticket.prioridade}
                       </span>
                     </td>
-                    {/* APLICAÇÃO 2: Apenas Data Curta na Tabela */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatarDataCurta(ticket.data_abertura)}
                     </td>
@@ -463,7 +468,6 @@ export function ManagementPortal({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              {/* APLICAÇÃO 3: Título do Modal com Ordem Numérica */}
               <h3 className="text-xl font-semibold text-gray-900">
                 {obterIdSequencial(selectedTicket, tickets)}
               </h3>
@@ -649,7 +653,6 @@ export function ManagementPortal({
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-500">Abertura:</span>
-                    {/* APLICAÇÃO 4: Data e Hora no Histórico */}
                     <span className="text-gray-900">
                       {formatarDataHora(selectedTicket.data_abertura)}
                     </span>
@@ -658,7 +661,6 @@ export function ManagementPortal({
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       <span className="text-gray-500">Finalização:</span>
-                      {/* APLICAÇÃO 5: Data e Hora no Histórico */}
                       <span className="text-gray-900">
                         {formatarDataHora(selectedTicket.data_final)}
                       </span>

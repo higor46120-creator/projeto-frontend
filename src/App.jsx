@@ -57,10 +57,23 @@ function HelpTecApp() {
   const setCurrentPage = (page) => navigate(PAGE_PATHS[page] ?? '/');
   const [activeTab, setActiveTab] = useState('new');
   
-  // Estado Oficial
-  const [tickets, setTickets] = useState([]);
+  // ==========================================
+  // ESTADO OFICIAL DOS CHAMADOS (AGORA PERSISTENTE)
+  // ==========================================
+  const [tickets, setTickets] = useState(() => {
+    // 1. Tenta buscar chamados já confirmados no cofre do navegador
+    const salvos = localStorage.getItem('@helptec-tickets-oficiais');
+    return salvos ? JSON.parse(salvos) : [];
+  });
 
-  // Estado Local (Rascunhos)
+  // 2. Sincronizador: Sempre que 'tickets' mudar, salva uma cópia no cofre
+  useEffect(() => {
+    localStorage.setItem('@helptec-tickets-oficiais', JSON.stringify(tickets));
+  }, [tickets]);
+
+  // ==========================================
+  // ESTADO DOS RASCUNHOS (PENDENTES)
+  // ==========================================
   const [chamadosPendentes, setChamadosPendentes] = useState(() => {
     const salvos = localStorage.getItem('@helptec-pendentes');
     return salvos ? JSON.parse(salvos) : [];
@@ -70,6 +83,9 @@ function HelpTecApp() {
     localStorage.setItem('@helptec-pendentes', JSON.stringify(chamadosPendentes));
   }, [chamadosPendentes]);
 
+  // ==========================================
+  // INTEGRAÇÃO COM BACK-END (API)
+  // ==========================================
   useEffect(() => {
     const isMockModeAtivo = localStorage.getItem('@helptec-modo-dev') === 'true';
     if (isMockModeAtivo) {
@@ -84,6 +100,7 @@ function HelpTecApp() {
   }, []);
 
   const handleLogout = () => {
+    // Remove apenas a flag de desenvolvimento, mantendo os dados salvos intactos!
     localStorage.removeItem('@helptec-modo-dev');
     logout();
     setCurrentPage('home');
@@ -129,6 +146,7 @@ function HelpTecApp() {
         data_abertura: new Date().toISOString()
       };
       
+      // Ao atualizar a variável tickets aqui, o useEffect será disparado automaticamente!
       setTickets((prev) => [chamadoSimulado, ...prev]);
       handleDeletarPendente(id_local);
       alert('🚧 MODO DEV: Chamado confirmado localmente (API ignorada)!');
@@ -144,6 +162,7 @@ function HelpTecApp() {
       })
       .catch((err) => {
         console.error('Falha ao confirmar chamado no servidor:', err);
+        // ... tratamentos de erro mantidos ...
         if (err.response) {
           const mensagemServidor = err.response.data.message || err.response.data.erro || JSON.stringify(err.response.data);
           alert(`O servidor recusou o chamado.\nMotivo: ${mensagemServidor}`);
@@ -248,8 +267,6 @@ function HelpTecApp() {
   );
 }
 
-// ADICIONADO: Avaliação Dinâmica de Rotas.
-// Se estivermos em ambiente de teste, o React ignora a barreira de login.
 function AppRoutes() {
   const location = useLocation();
   const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
@@ -265,10 +282,8 @@ function AppRoutes() {
           path="/*"
           element={
             isMockMode ? (
-              // Modo Dev: Ignora o AuthContext e o PrivateRoute
               <HelpTecApp />
             ) : (
-              // Produção: Exige validação de sessão
               <PrivateRoute>
                 <HelpTecApp />
               </PrivateRoute>
