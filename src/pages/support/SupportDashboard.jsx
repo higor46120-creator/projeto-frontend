@@ -13,6 +13,9 @@ import { ChatBox } from './components/ChatBox';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import { TopBar } from '../../components/TopBar';
 import { PageBackdrop } from '../../components/PageBackdrop';
+// Importando os formatadores
+import { formatarDataHora, formatarId, getStatusColor, getPriorityColor } from '../../utils/formatters';
+
 export function SupportDashboard({
   tickets,
   onUpdateTicket,
@@ -27,6 +30,7 @@ export function SupportDashboard({
   const [chatTicket, setChatTicket] = useState(null);
   const [showEquipmentManagement, setShowEquipmentManagement] = useState(false);
   const [filterStatus, setFilterStatus] = useState('queue');
+  
   const queueTickets = tickets.filter(
     (t) => t.status === 'Em Andamento' && !t.id_suporte,
   );
@@ -37,45 +41,25 @@ export function SupportDashboard({
   const resolvedTickets = myTickets.filter(
     (t) => t.status === 'Resolvido' || t.status === 'Fechado',
   );
+  
   let displayTickets = tickets;
   if (filterStatus === 'queue') displayTickets = queueTickets;
   if (filterStatus === 'in-progress') displayTickets = inProgressTickets;
+  
   const handleStartSupport = (ticketId) => {
     onUpdateTicket(ticketId, {
       id_suporte: 1,
-      // ID do técnico (mockado)
       status: 'Em Andamento',
     });
   };
+  
   const handleResolve = (ticketId) => {
     onUpdateTicket(ticketId, {
       status: 'Resolvido',
-      data_final: new Date().toLocaleString('pt-BR'),
+      data_final: new Date().toISOString(),
     });
   };
-  const getStatusColor = (status) => {
-    const colors = {
-      Aberto: 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm',
-      'Em Andamento':
-        'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-sm',
-      Aguardando:
-        'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm',
-      Resolvido:
-        'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm',
-      Fechado:
-        'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm',
-    };
-    return colors[status];
-  };
-  const getPriorityColor = (prioridade) => {
-    const colors = {
-      Baixa: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm',
-      Média: 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm',
-      Alta: 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm',
-      Crítica: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-sm',
-    };
-    return colors[prioridade];
-  };
+
   return (
     <>
       {chatTicket && (
@@ -108,10 +92,7 @@ export function SupportDashboard({
                 <div className="h-6 w-px bg-black/10" />
                 <div className="flex items-center gap-3">
                   <span className="relative flex h-11 w-11 items-center justify-center shrink-0">
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 rounded-full bg-purple-500 opacity-30 blur-md"
-                    />
+                    <span aria-hidden className="absolute inset-0 rounded-full bg-purple-500 opacity-30 blur-md" />
                     <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-fuchsia-50 shadow-inner">
                       <Package className="w-5 h-5 text-purple-700" />
                     </span>
@@ -152,19 +133,14 @@ export function SupportDashboard({
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative flex h-12 w-12 items-center justify-center shrink-0">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-sky-400 opacity-40 blur-lg"
-                  />
+                  <span aria-hidden className="absolute inset-0 rounded-full bg-sky-400 opacity-40 blur-lg" />
                   <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-blue-50 shadow-inner">
                     <Clock className="w-6 h-6 text-sky-600" />
                   </span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Fila</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {queueTickets.length}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{queueTickets.length}</p>
                 </div>
               </div>
             </div>
@@ -172,19 +148,14 @@ export function SupportDashboard({
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative flex h-12 w-12 items-center justify-center shrink-0">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-amber-400 opacity-40 blur-lg"
-                  />
+                  <span aria-hidden className="absolute inset-0 rounded-full bg-amber-400 opacity-40 blur-lg" />
                   <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-yellow-50 shadow-inner">
                     <AlertTriangle className="w-6 h-6 text-amber-600" />
                   </span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Em Atendimento</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {inProgressTickets.length}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{inProgressTickets.length}</p>
                 </div>
               </div>
             </div>
@@ -192,19 +163,14 @@ export function SupportDashboard({
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative flex h-12 w-12 items-center justify-center shrink-0">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-emerald-400 opacity-40 blur-lg"
-                  />
+                  <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-400 opacity-40 blur-lg" />
                   <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 shadow-inner">
                     <CheckCircle className="w-6 h-6 text-emerald-600" />
                   </span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Resolvidos</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {resolvedTickets.length}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{resolvedTickets.length}</p>
                 </div>
               </div>
             </div>
@@ -212,19 +178,14 @@ export function SupportDashboard({
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative flex h-12 w-12 items-center justify-center shrink-0">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-purple-400 opacity-40 blur-lg"
-                  />
+                  <span aria-hidden className="absolute inset-0 rounded-full bg-purple-400 opacity-40 blur-lg" />
                   <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-fuchsia-50 shadow-inner">
                     <Play className="w-6 h-6 text-purple-600" />
                   </span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Meus Chamados</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {myTickets.length}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{myTickets.length}</p>
                 </div>
               </div>
             </div>
@@ -235,9 +196,7 @@ export function SupportDashboard({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">
-                Filtrar:
-              </span>
+              <span className="text-sm font-medium text-gray-700">Filtrar:</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setFilterStatus('queue')}
@@ -268,10 +227,7 @@ export function SupportDashboard({
             {displayTickets.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
                 <div className="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-emerald-400 opacity-30 blur-lg"
-                  />
+                  <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-400 opacity-30 blur-lg" />
                   <span className="relative w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                   </span>
@@ -295,17 +251,14 @@ export function SupportDashboard({
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
+                            {/* ID e Cores Formatadas */}
                             <span className="text-sm font-medium text-gray-500">
-                              #{String(ticket.id_chamado ?? '').padStart(4, '0')}
+                              #{formatarId(ticket.id_chamado)}
                             </span>
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}
-                            >
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
                               {ticket.status}
                             </span>
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.prioridade)}`}
-                            >
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.prioridade)}`}>
                               {ticket.prioridade}
                             </span>
                             {isMyTicket && (
@@ -321,15 +274,13 @@ export function SupportDashboard({
                             Solicitante: {ticket.solicitante_nome}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Abertura: {ticket.data_abertura}
+                            Abertura: {formatarDataHora(ticket.data_abertura)}
                           </p>
                         </div>
                         <button
                           onClick={() =>
                             setExpandedTicket(
-                              expandedTicket === ticket.id_chamado
-                                ? null
-                                : ticket.id_chamado,
+                              expandedTicket === ticket.id_chamado ? null : ticket.id_chamado,
                             )
                           }
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -340,22 +291,19 @@ export function SupportDashboard({
                         </button>
                       </div>
 
+                      {/* BLOCO RESTAURADO: Secção Expandida com Botões */}
                       {expandedTicket === ticket.id_chamado && (
                         <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                              <span className="text-gray-500">
-                                Criticidade:
-                              </span>
+                              <span className="text-gray-500">Criticidade:</span>
                               <span className="ml-2 font-medium text-gray-900">
                                 {ticket.criticidade}
                               </span>
                             </div>
                             {ticket.equipamento && (
                               <div>
-                                <span className="text-gray-500">
-                                  Equipamento:
-                                </span>
+                                <span className="text-gray-500">Equipamento:</span>
                                 <span className="ml-2 font-medium text-gray-900">
                                   {ticket.equipamento}
                                 </span>
@@ -371,9 +319,7 @@ export function SupportDashboard({
                             )}
                             {ticket.cod_patrimonio && (
                               <div className="col-span-2">
-                                <span className="text-gray-500">
-                                  Patrimônio/Máquina:
-                                </span>
+                                <span className="text-gray-500">Patrimônio/Máquina:</span>
                                 <span className="ml-2 font-medium text-gray-900">
                                   {ticket.cod_patrimonio}
                                 </span>
@@ -382,24 +328,19 @@ export function SupportDashboard({
                           </div>
 
                           <div className="flex items-center gap-3 pt-3">
-                            {!isMyTicket &&
-                              ticket.status === 'Em Andamento' && (
-                                <button
-                                  onClick={() =>
-                                    handleStartSupport(ticket.id_chamado)
-                                  }
-                                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 text-white rounded-lg shadow-[0_0_18px_-4px_rgba(168,85,247,0.65)] hover:shadow-[0_0_26px_-4px_rgba(168,85,247,0.85)] transition-all font-medium"
-                                >
-                                  <Play className="w-4 h-4" />
-                                  Iniciar Atendimento
-                                </button>
-                              )}
+                            {!isMyTicket && ticket.status === 'Em Andamento' && (
+                              <button
+                                onClick={() => handleStartSupport(ticket.id_chamado)}
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 text-white rounded-lg shadow-[0_0_18px_-4px_rgba(168,85,247,0.65)] hover:shadow-[0_0_26px_-4px_rgba(168,85,247,0.85)] transition-all font-medium"
+                              >
+                                <Play className="w-4 h-4" />
+                                Iniciar Atendimento
+                              </button>
+                            )}
                             {isMyTicket && ticket.status === 'Em Andamento' && (
                               <>
                                 <button
-                                  onClick={() =>
-                                    handleResolve(ticket.id_chamado)
-                                  }
+                                  onClick={() => handleResolve(ticket.id_chamado)}
                                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-lg shadow-[0_0_18px_-4px_rgba(16,185,129,0.6)] hover:shadow-[0_0_26px_-4px_rgba(16,185,129,0.8)] transition-all font-medium"
                                 >
                                   <CheckCircle className="w-4 h-4" />

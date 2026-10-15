@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // ADICIONADO: importação do useEffect
 import {
   Search,
   ArrowLeft,
@@ -15,10 +15,7 @@ import {
 } from 'lucide-react';
 import { TopBar } from '../../components/TopBar';
 import { PageBackdrop } from '../../components/PageBackdrop';
-// Dados de exemplo — cadastro visível para todos os perfis
-// (Funcionário, Aprovador, Suporte e Gestor) que acessarem o Perfil.
-// Edição: apenas o Gestor pode editar qualquer ficha; os demais perfis
-// só podem editar a própria ficha (quando o e-mail logado corresponde).
+
 const INITIAL_CANDIDATES = [
   {
     id: 1,
@@ -65,6 +62,7 @@ const INITIAL_CANDIDATES = [
     registrationDate: '20/07/2026',
   },
 ];
+
 function getInitials(name) {
   const parts = name.trim().split(/\s+/);
   const first = parts[0]?.charAt(0) ?? '';
@@ -72,8 +70,6 @@ function getInitials(name) {
   return (first + last).toUpperCase();
 }
 
-// Gera uma cor de avatar consistente a partir do nome, deixando a lista
-// de candidatos mais colorida (mesma paleta usada nos cards da Home).
 const AVATAR_GRADIENTS = [
   'from-purple-500 to-fuchsia-500',
   'from-sky-500 to-blue-500',
@@ -81,6 +77,7 @@ const AVATAR_GRADIENTS = [
   'from-emerald-500 to-teal-500',
   'from-rose-500 to-pink-500',
 ];
+
 function avatarGradientFor(seed) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -88,6 +85,7 @@ function avatarGradientFor(seed) {
   }
   return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
 }
+
 export function CandidatePage({
   onBack,
   userEmail,
@@ -96,27 +94,45 @@ export function CandidatePage({
   onUserTypeChange,
   onNavigate,
 }) {
-  const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
+  
+  // MODIFICADO: Lazy Initialization (Inicialização Preguiçosa)
+  // O React agora vai checar o disco (localStorage) antes de usar a lista padrão.
+  const [candidates, setCandidates] = useState(() => {
+    const salvos = localStorage.getItem('@helptec-candidatos');
+    return salvos ? JSON.parse(salvos) : INITIAL_CANDIDATES;
+  });
+
+  // NOVO: Side-Effect (Efeito Colateral)
+  // Sempre que a variável 'candidates' mudar (criar ou editar um perfil), 
+  // nós salvamos a lista inteira no disco rígido do navegador.
+  useEffect(() => {
+    localStorage.setItem('@helptec-candidatos', JSON.stringify(candidates));
+  }, [candidates]);
+
   const [search, setSearch] = useState('');
+  
+  // Ajuste para evitar quebrar a tela caso todos os candidatos sejam deletados no futuro
   const [selectedId, setSelectedId] = useState(
-    INITIAL_CANDIDATES[0]?.id ?? null,
+    candidates[0]?.id ?? null,
   );
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isNewCandidate, setIsNewCandidate] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  
   const filtered = candidates.filter((c) =>
     c.fullName.toLowerCase().includes(search.toLowerCase()),
   );
   const selected = candidates.find((c) => c.id === selectedId) ?? null;
 
-  // Apenas o Gestor pode cadastrar novos perfis.
   const canCreate = userType === 'gestor';
 
-  // Regra de permissão: o Gestor pode editar qualquer ficha;
-  // os demais perfis só podem editar a própria ficha (mesmo e-mail logado).
-  const canEdit = (candidate) =>
-    userType === 'gestor' ||
-    candidate.email.toLowerCase() === userEmail.toLowerCase();
+  const canEdit = (candidate) => {
+    if (userType === 'gestor') return true;
+    if (!userEmail || !candidate?.email) return false;
+    return candidate.email.toLowerCase() === userEmail.toLowerCase();
+  };
+
   const openEdit = (candidate) => {
     setIsNewCandidate(false);
     setEditForm({
@@ -124,6 +140,7 @@ export function CandidatePage({
     });
     setIsEditing(true);
   };
+
   const openCreate = () => {
     setIsNewCandidate(true);
     setEditForm({
@@ -139,6 +156,7 @@ export function CandidatePage({
     });
     setIsEditing(true);
   };
+
   const handleSaveEdit = (e) => {
     e.preventDefault();
     if (!editForm) return;
@@ -156,6 +174,7 @@ export function CandidatePage({
     setEditForm(null);
     setIsNewCandidate(false);
   };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-50 via-white to-purple-50/40">
       <PageBackdrop />
@@ -507,6 +526,7 @@ export function CandidatePage({
     </div>
   );
 }
+
 const INFO_ROW_COLORS = {
   purple: 'bg-gradient-to-br from-purple-100 to-fuchsia-50 text-purple-700',
   sky: 'bg-gradient-to-br from-sky-100 to-blue-50 text-sky-700',
@@ -514,6 +534,7 @@ const INFO_ROW_COLORS = {
   emerald: 'bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-700',
   amber: 'bg-gradient-to-br from-amber-100 to-orange-50 text-amber-700',
 };
+
 function InfoRow({ icon: Icon, label, value, color = 'purple' }) {
   return (
     <div className="flex items-start gap-3">
@@ -531,6 +552,7 @@ function InfoRow({ icon: Icon, label, value, color = 'purple' }) {
     </div>
   );
 }
+
 function Field({ label, full, children }) {
   return (
     <div className={full ? 'sm:col-span-2' : ''}>

@@ -1,0 +1,25 @@
+//Login de desenvolvimento: mostra o botao "Entrar sem backend" na tela de login
+//(so funciona com npm run dev; nao entra no build de producao)
+VITE_DEV_LOGIN=true
+
+//Firebase - Console Firebase > Configuracoes do projeto > Geral > Config do SDK
+//Usado por src/firebase/config.js e por scripts/generate-firebase-sw.js
+VITE_FIREBASE_API_KEY="......",
+VITE_FIREBASE_AUTH_DOMAIN="......",
+VITE_FIREBASE_PROJECT_ID=".......",
+VITE_FIREBASE_STORAGE_BUCKET=".........",
+VITE_FIREBASE_MESSAGING_SENDER_ID="......",
+VITE_FIREBASE_APP_ID=".............",
+
+
+//Chave publica de push - Configuracoes do projeto > Cloud Messaging > Certificados Web Push
+VITE_FIREBASE_VAPID_KEY="..........."
+
+//Firebase - mesmos valores acima, com outro prefixo
+//Usado por src/config/firebase.js, Dockerfile e workflow do GitHub
+VITE_FIREBASE_API_KEY="..........",
+VITE_FIREBASE_AUTH_DOMAIN="........",
+VITE_FIREBASE_PROJECT_ID=".........",
+VITE_FIREBASE_STORAGE_BUCKET=".........",
+VITE_FIREBASE_MESSAGING_SENDER_ID="........",
+VITE_FIREBASE_APP_ID="............"
