@@ -136,8 +136,8 @@ export function ManagementPortal({
   // Filtrar tickets
   const filteredTickets = tickets.filter((ticket) => {
     const matchSearch =
-      ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.solicitante_nome.toLowerCase().includes(searchTerm.toLowerCase());
+      (ticket.descricao ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ticket.solicitante_nome ?? '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus =
       filterStatus === 'all' || ticket.status === filterStatus;
     const matchPriority =
@@ -476,7 +476,7 @@ export function ManagementPortal({
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{ticket.id_chamado.toString().padStart(4, '0')}
+                      #{String(ticket.id_chamado ?? '').padStart(4, '0')}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                       {ticket.descricao}
@@ -526,7 +526,7 @@ export function ManagementPortal({
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-gray-900">
-                Chamado #{selectedTicket.id_chamado.toString().padStart(4, '0')}
+                Chamado #{String(selectedTicket.id_chamado ?? '').padStart(4, '0')}
               </h3>
               <div className="flex items-center gap-2">
                 {!editMode && (
