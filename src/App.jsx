@@ -25,9 +25,6 @@ import { CandidatePage } from './pages/candidate/CandidatePage';
 import { FileText, List, ArrowLeft } from 'lucide-react';
 import ChamadosPage from './pages/chamados/ChamadosPage';
 
-// Cada página do portal tem a sua própria URL (ex.: localhost:3000/helpdesk),
-// então dá para digitar o endereço, favoritar, recarregar e usar o botão
-// "voltar" do navegador.
 const PAGE_PATHS = {
   home: '/',
   helpdesk: '/helpdesk',
@@ -37,13 +34,11 @@ const PAGE_PATHS = {
   webmail: '/webmail',
   candidato: '/candidato',
 };
+
 const PATH_PAGES = Object.fromEntries(
   Object.entries(PAGE_PATHS).map(([page, path]) => [path, page]),
 );
 
-// O backend pode devolver a lista de chamados simples ou paginada
-// ({ itens, totalItens, totalPaginas } - mesmo formato usado em /chamados).
-// As telas esperam sempre uma lista, então normalizamos aqui.
 function extractTickets(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.itens)) return data.itens;
@@ -51,9 +46,6 @@ function extractTickets(data) {
   return [];
 }
 
-// Conteúdo do HelpTec depois do login. Fica atrás do PrivateRoute - o
-// usuário autenticado vem do AuthContext (JWT emitido pelo backend), não
-// mais de um e-mail digitado à mão.
 function HelpTecApp() {
   const { user, logout } = useAuth();
   const userEmail = user?.email;
@@ -64,10 +56,43 @@ function HelpTecApp() {
   const currentPage = PATH_PAGES[pathname];
   const setCurrentPage = (page) => navigate(PAGE_PATHS[page] ?? '/');
   const [activeTab, setActiveTab] = useState('new');
-  const [tickets, setTickets] = useState([]);
+  
+  // ==========================================
+  // ESTADO OFICIAL DOS CHAMADOS (AGORA PERSISTENTE)
+  // ==========================================
+  const [tickets, setTickets] = useState(() => {
+    // 1. Tenta buscar chamados já confirmados no cofre do navegador
+    const salvos = localStorage.getItem('@helptec-tickets-oficiais');
+    return salvos ? JSON.parse(salvos) : [];
+  });
 
-  // Chamados agora vêm do backend (ChamadoController), não de estado local.
+  // 2. Sincronizador: Sempre que 'tickets' mudar, salva uma cópia no cofre
   useEffect(() => {
+    localStorage.setItem('@helptec-tickets-oficiais', JSON.stringify(tickets));
+  }, [tickets]);
+
+  // ==========================================
+  // ESTADO DOS RASCUNHOS (PENDENTES)
+  // ==========================================
+  const [chamadosPendentes, setChamadosPendentes] = useState(() => {
+    const salvos = localStorage.getItem('@helptec-pendentes');
+    return salvos ? JSON.parse(salvos) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('@helptec-pendentes', JSON.stringify(chamadosPendentes));
+  }, [chamadosPendentes]);
+
+  // ==========================================
+  // INTEGRAÇÃO COM BACK-END (API)
+  // ==========================================
+  useEffect(() => {
+    const isMockModeAtivo = localStorage.getItem('@helptec-modo-dev') === 'true';
+    if (isMockModeAtivo) {
+      console.warn('🚧 Modo Dev Ativo: Ignorando a busca de chamados na API.');
+      return; 
+    }
+
     api
       .get('/api/chamados')
       .then((res) => setTickets(extractTickets(res.data)))
@@ -75,11 +100,12 @@ function HelpTecApp() {
   }, []);
 
   const handleLogout = () => {
+    // Remove apenas a flag de desenvolvimento, mantendo os dados salvos intactos!
+    localStorage.removeItem('@helptec-modo-dev');
     logout();
     setCurrentPage('home');
   };
 
-  // Navegação central usada pelo menu, disponível em qualquer página
   const handleNavigate = (itemId) => {
     if (itemId === 'portal') setCurrentPage('home');
     else if (itemId === 'helpdesk') setCurrentPage('helpdesk');
@@ -91,112 +117,94 @@ function HelpTecApp() {
   };
 
   const handleAddTicket = (ticket) => {
+    const geradorId = window.crypto && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : Date.now().toString();
+
+    const novoPendente = {
+      ...ticket,
+      id_local: geradorId,
+      id_chamado: geradorId,
+      status: 'Pendente',
+      data_abertura: new Date().toISOString(),
+      isPendente: true
+    };
+    
+    setChamadosPendentes((prev) => [novoPendente, ...prev]);
+    setActiveTab('list');
+  };
+
+  const handleConfirmarPendente = (chamadoLocal) => {
+    const isMockModeAtivo = localStorage.getItem('@helptec-modo-dev') === 'true';
+    const { id_local, isPendente, id_chamado, status, data_abertura, ...dadosParaAPI } = chamadoLocal;
+
+    if (isMockModeAtivo) {
+      const chamadoSimulado = {
+        ...dadosParaAPI,
+        id_chamado: id_local,
+        status: 'Aberto',
+        data_abertura: new Date().toISOString()
+      };
+      
+      // Ao atualizar a variável tickets aqui, o useEffect será disparado automaticamente!
+      setTickets((prev) => [chamadoSimulado, ...prev]);
+      handleDeletarPendente(id_local);
+      alert('🚧 MODO DEV: Chamado confirmado localmente (API ignorada)!');
+      return; 
+    }
+
     api
-      .post('/api/chamados', ticket)
+      .post('/api/chamados', dadosParaAPI)
       .then((res) => {
-        setTickets((prev) => [res.data, ...prev]);
-        setActiveTab('list');
+        setTickets((prev) => [res.data, ...prev]); 
+        handleDeletarPendente(id_local);
+        alert('Chamado confirmado e enviado para a área de Aprovação!');
       })
-      .catch((err) => console.error('Falha ao abrir chamado:', err));
+      .catch((err) => {
+        console.error('Falha ao confirmar chamado no servidor:', err);
+        // ... tratamentos de erro mantidos ...
+        if (err.response) {
+          const mensagemServidor = err.response.data.message || err.response.data.erro || JSON.stringify(err.response.data);
+          alert(`O servidor recusou o chamado.\nMotivo: ${mensagemServidor}`);
+        } else if (err.request) {
+          alert('Não foi possível contactar o servidor. Verifique se o Back-end está rodando e as regras de CORS.');
+        } else {
+          alert(`Erro na aplicação: ${err.message}`);
+        }
+      });
+  };
+
+  const handleDeletarPendente = (id_local) => {
+    setChamadosPendentes((prev) => prev.filter(t => t.id_local !== id_local));
   };
 
   const handleUpdateTicket = (id, updates) => {
+    const isMockModeAtivo = localStorage.getItem('@helptec-modo-dev') === 'true';
+
+    if (isMockModeAtivo) {
+      setTickets((prev) => prev.map((ticket) => (ticket.id_chamado === id ? { ...ticket, ...updates } : ticket)));
+      alert('🚧 MODO DEV: Chamado atualizado localmente!');
+      return;
+    }
+
     api
       .patch(`/api/chamados/${id}`, updates)
       .then((res) => {
-        setTickets((prev) =>
-          prev.map((ticket) => (ticket.id_chamado === id ? res.data : ticket)),
-        );
+        setTickets((prev) => prev.map((ticket) => (ticket.id_chamado === id ? res.data : ticket)));
       })
       .catch((err) => console.error('Falha ao atualizar chamado:', err));
   };
 
-  // Endereço que não existe no portal: volta para a página inicial.
-  if (!currentPage) {
-    return <Navigate to="/" replace />;
-  }
+  if (!currentPage) return <Navigate to="/" replace />;
+  if (currentPage === 'home') return <HomePage userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} onNavigateToHelpDesk={() => setCurrentPage('helpdesk')} />;
+  if (currentPage === 'approver') return <ApproverDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />;
+  if (currentPage === 'support') return <SupportDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />;
+  if (currentPage === 'management') return <ManagementPortal tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />;
+  if (currentPage === 'webmail') return <WebmailPage onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />;
+  if (currentPage === 'candidato') return <CandidatePage onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />;
 
-  if (currentPage === 'home') {
-    return (
-      <HomePage
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-        onNavigateToHelpDesk={() => setCurrentPage('helpdesk')}
-      />
-    );
-  }
-  if (currentPage === 'approver') {
-    return (
-      <ApproverDashboard
-        tickets={tickets}
-        onUpdateTicket={handleUpdateTicket}
-        onBack={() => setCurrentPage('home')}
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-      />
-    );
-  }
-  if (currentPage === 'support') {
-    return (
-      <SupportDashboard
-        tickets={tickets}
-        onUpdateTicket={handleUpdateTicket}
-        onBack={() => setCurrentPage('home')}
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-      />
-    );
-  }
-  if (currentPage === 'management') {
-    return (
-      <ManagementPortal
-        tickets={tickets}
-        onUpdateTicket={handleUpdateTicket}
-        onBack={() => setCurrentPage('home')}
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-      />
-    );
-  }
-  if (currentPage === 'webmail') {
-    return (
-      <WebmailPage
-        onBack={() => setCurrentPage('home')}
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-      />
-    );
-  }
-  if (currentPage === 'candidato') {
-    return (
-      <CandidatePage
-        onBack={() => setCurrentPage('home')}
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        userType={userType}
-        onUserTypeChange={setUserType}
-        onNavigate={handleNavigate}
-      />
-    );
-  }
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -210,26 +218,15 @@ function HelpTecApp() {
               </button>
               <div className="h-6 w-px bg-gray-300" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Sistema de Help Desk
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  Portal do Solicitante
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">Sistema de Help Desk</h1>
+                <p className="text-sm text-gray-500 mt-1">Portal do Solicitante</p>
               </div>
             </div>
-            <TopBar
-              userEmail={userEmail}
-              onLogout={handleLogout}
-              userType={userType}
-              onUserTypeChange={setUserType}
-              onNavigate={handleNavigate}
-            />
+            <TopBar userEmail={userEmail} onLogout={handleLogout} userType={userType} onUserTypeChange={setUserType} onNavigate={handleNavigate} />
           </div>
         </div>
       </header>
 
-      {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-8">
@@ -247,42 +244,50 @@ function HelpTecApp() {
               <List className="w-5 h-5" />
               <span className="font-medium">Meus Chamados</span>
               <span className="bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                {tickets.length}
+                {tickets.length + chamadosPendentes.length}
               </span>
             </button>
           </nav>
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'new' ? (
           <TicketForm onSubmit={handleAddTicket} />
         ) : (
-          <TicketList tickets={tickets} onUpdateTicket={handleUpdateTicket} />
+          <TicketList 
+            tickets={[...chamadosPendentes, ...tickets]} 
+            onUpdateTicket={handleUpdateTicket} 
+            onConfirmTicket={handleConfirmarPendente}
+            onDeletePending={handleDeletarPendente}
+          />
         )}
       </main>
     </div>
   );
 }
 
-// Fica dentro do BrowserRouter para poder usar o endereço atual como chave
-// de reset do ErrorBoundary.
 function AppRoutes() {
   const location = useLocation();
+  const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
+
   return (
     <ErrorBoundary resetKey={location.pathname}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/chamados" element={<ChamadosPage />} />
-
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+        
         <Route
           path="/*"
           element={
-            <PrivateRoute>
+            isMockMode ? (
               <HelpTecApp />
-            </PrivateRoute>
+            ) : (
+              <PrivateRoute>
+                <HelpTecApp />
+              </PrivateRoute>
+            )
           }
         />
       </Routes>

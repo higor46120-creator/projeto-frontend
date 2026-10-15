@@ -21,128 +21,47 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useFirebaseMessaging } from '../hooks/useFirebaseMessaging';
+
 // Menu para diferentes perfis de usuário
 const MENUS = {
   funcionario: [
-    {
-      id: 'portal',
-      label: 'PORTAL DO SERVIDOR',
-      icon: Home,
-    },
-    {
-      id: 'helpdesk',
-      label: 'HELP DESK',
-      icon: Headphones,
-    },
-    {
-      id: 'webmail',
-      label: 'WEBMAIL',
-      icon: Mail,
-    },
-    {
-      id: 'candidato',
-      label: 'PERFIL',
-      icon: User,
-    },
-    {
-      id: 'processos',
-      label: 'PROCESSOS SELETIVOS',
-      icon: Briefcase,
-    },
-    {
-      id: 'licitacoes',
-      label: 'LICITAÇÕES',
-      icon: Gavel,
-    },
-    {
-      id: 'atendimento',
-      label: 'ATENDIMENTO',
-      icon: Headphones,
-    },
-    {
-      id: 'ouvidoria',
-      label: 'OUVIDORIA',
-      icon: FileText,
-    },
-    {
-      id: 'transparencia',
-      label: 'TRANSPARÊNCIA',
-      icon: Eye,
-    },
+    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'helpdesk', label: 'HELP DESK', icon: Headphones },
+    { id: 'webmail', label: 'WEBMAIL', icon: Mail },
+    { id: 'candidato', label: 'PERFIL', icon: User },
+    { id: 'processos', label: 'PROCESSOS SELETIVOS', icon: Briefcase },
+    { id: 'licitacoes', label: 'LICITAÇÕES', icon: Gavel },
+    { id: 'atendimento', label: 'ATENDIMENTO', icon: Headphones },
+    { id: 'ouvidoria', label: 'OUVIDORIA', icon: FileText },
+    { id: 'transparencia', label: 'TRANSPARÊNCIA', icon: Eye },
   ],
   aprovador: [
-    {
-      id: 'portal',
-      label: 'PORTAL DO SERVIDOR',
-      icon: Home,
-    },
-    {
-      id: 'approver',
-      label: 'ÁREA DO APROVADOR',
-      icon: CheckSquare,
-    },
-    {
-      id: 'webmail',
-      label: 'WEBMAIL',
-      icon: Mail,
-    },
-    {
-      id: 'candidato',
-      label: 'PERFIL',
-      icon: User,
-    },
+    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'approver', label: 'ÁREA DO APROVADOR', icon: CheckSquare },
+    { id: 'webmail', label: 'WEBMAIL', icon: Mail },
+    { id: 'candidato', label: 'PERFIL', icon: User },
   ],
   suporte: [
-    {
-      id: 'portal',
-      label: 'PORTAL DO SERVIDOR',
-      icon: Home,
-    },
-    {
-      id: 'support',
-      label: 'ÁREA DO SUPORTE',
-      icon: Wrench,
-    },
-    {
-      id: 'webmail',
-      label: 'WEBMAIL',
-      icon: Mail,
-    },
-    {
-      id: 'candidato',
-      label: 'PERFIL',
-      icon: User,
-    },
+    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'support', label: 'ÁREA DO SUPORTE', icon: Wrench },
+    { id: 'webmail', label: 'WEBMAIL', icon: Mail },
+    { id: 'candidato', label: 'PERFIL', icon: User },
   ],
   gestor: [
-    {
-      id: 'portal',
-      label: 'PORTAL DO SERVIDOR',
-      icon: Home,
-    },
-    {
-      id: 'management',
-      label: 'PORTAL DE GERENCIAMENTO',
-      icon: BarChart3,
-    },
-    {
-      id: 'webmail',
-      label: 'WEBMAIL',
-      icon: Mail,
-    },
-    {
-      id: 'candidato',
-      label: 'PERFIL',
-      icon: User,
-    },
+    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'management', label: 'PORTAL DE GERENCIAMENTO', icon: BarChart3 },
+    { id: 'webmail', label: 'WEBMAIL', icon: Mail },
+    { id: 'candidato', label: 'PERFIL', icon: User },
   ],
 };
+
 const USER_TYPE_LABELS = {
   funcionario: 'Funcionário',
   aprovador: 'Aprovador',
   suporte: 'Suporte',
   gestor: 'Gestor',
 };
+
 export function TopBar({
   userEmail,
   onLogout,
@@ -152,20 +71,48 @@ export function TopBar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  
   const { permission, requestPermission, error } = useFirebaseMessaging({
     onForegroundMessage: (payload) => {
-      // Notificação chegou com o app aberto — não existe notificação
-      // nativa automática nesse caso, então mostramos algo simples.
       const title = payload?.notification?.title || 'Nova notificação';
       const body = payload?.notification?.body || '';
       alert(body ? `${title}\n${body}` : title);
     },
   });
+  
   const menuItems = MENUS[userType];
+
   const handleMenuClick = (itemId) => {
     onNavigate(itemId);
     setMenuOpen(false);
   };
+
+  // ADICIONADO: Função Sênior para sincronizar Estado + Roteamento
+  const handleMudancaDePerfil = (e) => {
+    const novoPerfil = e.target.value;
+    
+    // 1. Atualiza o valor selecionado no select
+    onUserTypeChange(novoPerfil);
+    
+    // 2. Navega instantaneamente para a rota (Dashboard) do perfil escolhido
+    switch (novoPerfil) {
+      case 'aprovador':
+        onNavigate('approver');
+        break;
+      case 'suporte':
+        onNavigate('support');
+        break;
+      case 'gestor':
+        onNavigate('management');
+        break;
+      case 'funcionario':
+      default:
+        // Assume-se que o portal do funcionário é o 'home' ou 'portal' no seu App.jsx
+        onNavigate('portal'); 
+        break;
+    }
+  };
+
   return (
     <div className="flex items-center gap-2 flex-wrap justify-end">
       {/* E-mail do usuário logado */}
@@ -183,14 +130,14 @@ export function TopBar({
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
 
-      {/* Ativar/checar notificações push (Firebase Cloud Messaging) */}
+      {/* Ativar/checar notificações */}
       <button
         onClick={permission !== 'granted' ? requestPermission : undefined}
         title={
           permission === 'granted'
             ? 'Notificações ativadas'
             : permission === 'denied'
-              ? 'Notificações bloqueadas no navegador — libere nas configurações do site'
+              ? 'Notificações bloqueadas no navegador'
               : 'Ativar notificações'
         }
         disabled={permission === 'denied'}
@@ -214,7 +161,7 @@ export function TopBar({
         </span>
       )}
 
-      {/* Sair - disponível em qualquer página, a qualquer momento */}
+      {/* Sair */}
       <button
         onClick={onLogout}
         title="Sair"
@@ -224,10 +171,10 @@ export function TopBar({
         <span className="hidden sm:inline">Sair</span>
       </button>
 
-      {/* Seletor de Perfil/Área */}
+      {/* MODIFICADO: Seletor de Perfil/Área agora usa o handleMudancaDePerfil */}
       <select
         value={userType}
-        onChange={(e) => onUserTypeChange(e.target.value)}
+        onChange={handleMudancaDePerfil}
         title="Escolher área de acesso"
         className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
       >
