@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { getToken, setToken as saveToken, clearToken } from '../services/api';
 
+// Criação do Contexto
 const AuthContext = createContext(null);
 
-// As claims casam com o que o JwtService.gerarToken() do backend grava:
-// sub (email), id, name, pictureUrl, e agora: role.
+// Função pura para decodificar o JWT e extrair as permissões diretamente do Back-end
 function decodeJwt(token) {
   try {
     const payloadBase64 = token.split('.')[1];
@@ -15,12 +15,14 @@ function decodeJwt(token) {
         .join(''),
     );
     const claims = JSON.parse(payloadJson);
+    
     return {
       email: claims.sub,
       id: claims.id,
       name: claims.name,
       pictureUrl: claims.pictureUrl,
-      // ✅ ADICIONADO: Extraímos o cargo do Token JWT (Fallback para 'funcionario')
+      // ✅ A FONTE DA VERDADE: O cargo agora vem 100% do Banco de Dados via JWT!
+      // Usamos fallback para 'funcionario' caso a API não envie o campo
       role: claims.role || claims.perfil || 'funcionario', 
     };
   } catch {
@@ -28,66 +30,43 @@ function decodeJwt(token) {
   }
 }
 
+// Provedor do Contexto que envolverá a aplicação (App.jsx)
 export function AuthProvider({ children }) {
+  // Inicialização Preguiçosa (Lazy Initialization): 
+  // Só lê o localStorage (getToken) na primeira vez que a aplicação abre, poupando processamento.
   const [user, setUser] = useState(() => {
     const token = getToken();
-    let decodedUser = token ? decodeJwt(token) : null;
-
-    // ✅ HACK SÊNIOR: Forçar perfil de teste no Modo Dev
-    const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
-    if (isMockMode && decodedUser) {
-      const devRole = localStorage.getItem('@helptec-dev-role');
-      if (devRole) {
-        decodedUser = { ...decodedUser, role: devRole };
-      }
-    }
-
-    return decodedUser;
+    return token ? decodeJwt(token) : null;
   });
 
+  // Efeito de segurança: Valida a integridade do token ao montar a aplicação.
+  // Se o token existir no navegador mas estiver corrompido/ilegível, limpamos a sessão.
   useEffect(() => {
     const token = getToken();
     if (token) {
-      let decoded = decodeJwt(token);
-      
+      const decoded = decodeJwt(token);
       if (!decoded) {
         clearToken();
         setUser(null);
-      } else {
-        // Aplica o hack também caso o token mude sem desmontar a página
-        const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
-        if (isMockMode) {
-          const devRole = localStorage.getItem('@helptec-dev-role');
-          if (devRole) {
-            decoded = { ...decoded, role: devRole };
-            setUser(decoded);
-          }
-        }
       }
     }
   }, []);
 
+  // Função disparada pela página de Login após receber o OK da API
   const login = (token) => {
     saveToken(token);
-    let decodedUser = decodeJwt(token);
-
-    // ✅ HACK SÊNIOR: Intercepta o momento exato do login no Modo Dev
-    const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
-    if (isMockMode) {
-      const devRole = localStorage.getItem('@helptec-dev-role');
-      if (devRole) {
-        decodedUser = { ...decodedUser, role: devRole };
-      }
-    }
-
-    setUser(decodedUser);
+    // Atualiza o estado global imediatamente com os dados e permissões do Back-end
+    setUser(decodeJwt(token));
   };
 
+  // Função para encerrar a sessão
   const logout = () => {
     clearToken();
     setUser(null);
   };
 
+  // Otimização de Performance: useMemo garante que os componentes filhos 
+  // só re-renderizem se o objeto `user` realmente mudar.
   const value = useMemo(
     () => ({ user, isAuthenticated: !!user, login, logout }),
     [user],
@@ -96,6 +75,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// Hook customizado para facilitar o consumo do contexto
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
