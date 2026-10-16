@@ -4,7 +4,7 @@ import { getToken, setToken as saveToken, clearToken } from '../services/api';
 const AuthContext = createContext(null);
 
 // As claims casam com o que o JwtService.gerarToken() do backend grava:
-// sub (email), id, name, pictureUrl.
+// sub (email), id, name, pictureUrl, e agora: role.
 function decodeJwt(token) {
   try {
     const payloadBase64 = token.split('.')[1];
@@ -20,6 +20,8 @@ function decodeJwt(token) {
       id: claims.id,
       name: claims.name,
       pictureUrl: claims.pictureUrl,
+      // ✅ ADICIONADO: Extraímos o cargo do Token JWT (Fallback para 'funcionario')
+      role: claims.role || claims.perfil || 'funcionario', 
     };
   } catch {
     return null;
@@ -29,25 +31,56 @@ function decodeJwt(token) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const token = getToken();
-    return token ? decodeJwt(token) : null;
+    let decodedUser = token ? decodeJwt(token) : null;
+
+    // ✅ HACK SÊNIOR: Forçar perfil de teste no Modo Dev
+    const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
+    if (isMockMode && decodedUser) {
+      const devRole = localStorage.getItem('@helptec-dev-role');
+      if (devRole) {
+        decodedUser = { ...decodedUser, role: devRole };
+      }
+    }
+
+    return decodedUser;
   });
 
   useEffect(() => {
     const token = getToken();
     if (token) {
-      const decoded = decodeJwt(token);
-      // Token presente mas ilegível/expirado: limpa em vez de manter uma
-      // sessão "fantasma".
+      let decoded = decodeJwt(token);
+      
       if (!decoded) {
         clearToken();
         setUser(null);
+      } else {
+        // Aplica o hack também caso o token mude sem desmontar a página
+        const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
+        if (isMockMode) {
+          const devRole = localStorage.getItem('@helptec-dev-role');
+          if (devRole) {
+            decoded = { ...decoded, role: devRole };
+            setUser(decoded);
+          }
+        }
       }
     }
   }, []);
 
   const login = (token) => {
     saveToken(token);
-    setUser(decodeJwt(token));
+    let decodedUser = decodeJwt(token);
+
+    // ✅ HACK SÊNIOR: Intercepta o momento exato do login no Modo Dev
+    const isMockMode = localStorage.getItem('@helptec-modo-dev') === 'true';
+    if (isMockMode) {
+      const devRole = localStorage.getItem('@helptec-dev-role');
+      if (devRole) {
+        decodedUser = { ...decodedUser, role: devRole };
+      }
+    }
+
+    setUser(decodedUser);
   };
 
   const logout = () => {

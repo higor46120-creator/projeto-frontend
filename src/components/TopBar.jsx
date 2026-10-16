@@ -9,7 +9,6 @@ import {
   Gavel,
   Headphones,
   Eye,
-  Building,
   CheckSquare,
   Wrench,
   BarChart3,
@@ -22,7 +21,6 @@ import {
 import { useTheme } from '../hooks/useTheme';
 import { useFirebaseMessaging } from '../hooks/useFirebaseMessaging';
 
-// Menu para diferentes perfis de usuário
 const MENUS = {
   funcionario: [
     { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
@@ -62,11 +60,11 @@ const USER_TYPE_LABELS = {
   gestor: 'Gestor',
 };
 
+// ✅ MODIFICADO: Recebe userRole em vez de userType, e remove onUserTypeChange
 export function TopBar({
   userEmail,
   onLogout,
-  userType,
-  onUserTypeChange,
+  userRole, 
   onNavigate,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -80,48 +78,22 @@ export function TopBar({
     },
   });
   
-  const menuItems = MENUS[userType];
+  // Garantia de segurança: se o backend enviar um cargo desconhecido, usa 'funcionario'
+  const safeRole = MENUS[userRole] ? userRole : 'funcionario';
+  const menuItems = MENUS[safeRole];
 
   const handleMenuClick = (itemId) => {
     onNavigate(itemId);
     setMenuOpen(false);
   };
 
-  // ADICIONADO: Função Sênior para sincronizar Estado + Roteamento
-  const handleMudancaDePerfil = (e) => {
-    const novoPerfil = e.target.value;
-    
-    // 1. Atualiza o valor selecionado no select
-    onUserTypeChange(novoPerfil);
-    
-    // 2. Navega instantaneamente para a rota (Dashboard) do perfil escolhido
-    switch (novoPerfil) {
-      case 'aprovador':
-        onNavigate('approver');
-        break;
-      case 'suporte':
-        onNavigate('support');
-        break;
-      case 'gestor':
-        onNavigate('management');
-        break;
-      case 'funcionario':
-      default:
-        // Assume-se que o portal do funcionário é o 'home' ou 'portal' no seu App.jsx
-        onNavigate('portal'); 
-        break;
-    }
-  };
-
   return (
     <div className="flex items-center gap-2 flex-wrap justify-end">
-      {/* E-mail do usuário logado */}
       <div className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-gray-600">
         <Mail className="w-4 h-4 text-gray-400" />
         <span className="max-w-[180px] truncate">{userEmail}</span>
       </div>
 
-      {/* Alternar modo claro/escuro */}
       <button
         onClick={toggleTheme}
         title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
@@ -130,7 +102,6 @@ export function TopBar({
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
 
-      {/* Ativar/checar notificações */}
       <button
         onClick={permission !== 'granted' ? requestPermission : undefined}
         title={
@@ -161,32 +132,22 @@ export function TopBar({
         </span>
       )}
 
-      {/* Sair */}
+      {/* ✅ ADICIONADO: Em vez do <select>, mostramos a etiqueta com o Cargo real da API */}
+      <div className="px-3 py-1.5 ml-2 bg-indigo-50 text-indigo-700 text-sm font-bold tracking-wide rounded-md capitalize border border-indigo-100 shadow-sm">
+        {USER_TYPE_LABELS[safeRole] || safeRole}
+      </div>
+
       <button
         onClick={onLogout}
         title="Sair"
-        className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+        className="flex items-center gap-2 px-3 py-2 ml-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
       >
         <LogOut className="w-4 h-4" />
         <span className="hidden sm:inline">Sair</span>
       </button>
 
-      {/* MODIFICADO: Seletor de Perfil/Área agora usa o handleMudancaDePerfil */}
-      <select
-        value={userType}
-        onChange={handleMudancaDePerfil}
-        title="Escolher área de acesso"
-        className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-      >
-        {Object.keys(USER_TYPE_LABELS).map((type) => (
-          <option key={type} value={type}>
-            {USER_TYPE_LABELS[type]}
-          </option>
-        ))}
-      </select>
-
-      {/* Menu Dropdown */}
-      <div className="relative">
+      {/* Menu Dropdown mantido intacto */}
+      <div className="relative ml-2">
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
