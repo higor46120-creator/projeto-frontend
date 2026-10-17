@@ -1,10 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { getToken, setToken as saveToken, clearToken } from '../services/api';
 
-// Criação do Contexto
 const AuthContext = createContext(null);
 
-// Função pura para decodificar o JWT e extrair as permissões diretamente do Back-end
+// ✅ Dicionário de Perfis (ACL Front-end)
+const EMAIL_ROLE_MAP = {
+  'gestor@helptec.com': 'gestor',
+  'suporte@helptec.com': 'suporte',
+  'aprovador@helptec.com': 'aprovador',
+};
+
+// Função pura para decodificar o JWT e extrair as permissões
 function decodeJwt(token) {
   try {
     const payloadBase64 = token.split('.')[1];
@@ -15,32 +21,29 @@ function decodeJwt(token) {
         .join(''),
     );
     const claims = JSON.parse(payloadJson);
+    const userEmail = claims.sub; 
+    
+    // Define o cargo baseado no dicionário ou fallback da API
+    const assignedRole = EMAIL_ROLE_MAP[userEmail] || claims.role || claims.perfil || 'funcionario';
     
     return {
-      email: claims.sub,
+      email: userEmail,
       id: claims.id,
       name: claims.name,
       pictureUrl: claims.pictureUrl,
-      // ✅ A FONTE DA VERDADE: O cargo agora vem 100% do Banco de Dados via JWT!
-      // Usamos fallback para 'funcionario' caso a API não envie o campo
-      role: claims.role || claims.perfil || 'funcionario', 
+      role: assignedRole,
     };
   } catch {
     return null;
   }
 }
 
-// Provedor do Contexto que envolverá a aplicação (App.jsx)
 export function AuthProvider({ children }) {
-  // Inicialização Preguiçosa (Lazy Initialization): 
-  // Só lê o localStorage (getToken) na primeira vez que a aplicação abre, poupando processamento.
   const [user, setUser] = useState(() => {
     const token = getToken();
     return token ? decodeJwt(token) : null;
   });
 
-  // Efeito de segurança: Valida a integridade do token ao montar a aplicação.
-  // Se o token existir no navegador mas estiver corrompido/ilegível, limpamos a sessão.
   useEffect(() => {
     const token = getToken();
     if (token) {
@@ -52,21 +55,16 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Função disparada pela página de Login após receber o OK da API
   const login = (token) => {
     saveToken(token);
-    // Atualiza o estado global imediatamente com os dados e permissões do Back-end
     setUser(decodeJwt(token));
   };
 
-  // Função para encerrar a sessão
   const logout = () => {
     clearToken();
     setUser(null);
   };
 
-  // Otimização de Performance: useMemo garante que os componentes filhos 
-  // só re-renderizem se o objeto `user` realmente mudar.
   const value = useMemo(
     () => ({ user, isAuthenticated: !!user, login, logout }),
     [user],
@@ -75,7 +73,6 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Hook customizado para facilitar o consumo do contexto
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

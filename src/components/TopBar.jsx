@@ -3,7 +3,7 @@ import {
   ChevronDown,
   User,
   Home,
-  Mail,
+  Mail, // Mantido apenas para o ícone do array MENUS
   FileText,
   Briefcase,
   Gavel,
@@ -15,38 +15,33 @@ import {
   LogOut,
   Sun,
   Moon,
-  Bell,
-  BellOff,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
-import { useFirebaseMessaging } from '../hooks/useFirebaseMessaging';
 
 const MENUS = {
   funcionario: [
-    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
     { id: 'helpdesk', label: 'HELP DESK', icon: Headphones },
     { id: 'webmail', label: 'WEBMAIL', icon: Mail },
     { id: 'candidato', label: 'PERFIL', icon: User },
     { id: 'processos', label: 'PROCESSOS SELETIVOS', icon: Briefcase },
     { id: 'licitacoes', label: 'LICITAÇÕES', icon: Gavel },
-    { id: 'atendimento', label: 'ATENDIMENTO', icon: Headphones },
     { id: 'ouvidoria', label: 'OUVIDORIA', icon: FileText },
     { id: 'transparencia', label: 'TRANSPARÊNCIA', icon: Eye },
   ],
   aprovador: [
-    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'helpdesk', label: 'HELP DESK', icon: Headphones },
     { id: 'approver', label: 'ÁREA DO APROVADOR', icon: CheckSquare },
     { id: 'webmail', label: 'WEBMAIL', icon: Mail },
     { id: 'candidato', label: 'PERFIL', icon: User },
   ],
   suporte: [
-    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'helpdesk', label: 'HELP DESK', icon: Headphones },
     { id: 'support', label: 'ÁREA DO SUPORTE', icon: Wrench },
     { id: 'webmail', label: 'WEBMAIL', icon: Mail },
     { id: 'candidato', label: 'PERFIL', icon: User },
   ],
   gestor: [
-    { id: 'portal', label: 'PORTAL DO SERVIDOR', icon: Home },
+    { id: 'helpdesk', label: 'HELP DESK', icon: Headphones },
     { id: 'management', label: 'PORTAL DE GERENCIAMENTO', icon: BarChart3 },
     { id: 'webmail', label: 'WEBMAIL', icon: Mail },
     { id: 'candidato', label: 'PERFIL', icon: User },
@@ -60,7 +55,6 @@ const USER_TYPE_LABELS = {
   gestor: 'Gestor',
 };
 
-// ✅ MODIFICADO: Recebe userRole em vez de userType, e remove onUserTypeChange
 export function TopBar({
   userEmail,
   onLogout,
@@ -69,16 +63,7 @@ export function TopBar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  
-  const { permission, requestPermission, error } = useFirebaseMessaging({
-    onForegroundMessage: (payload) => {
-      const title = payload?.notification?.title || 'Nova notificação';
-      const body = payload?.notification?.body || '';
-      alert(body ? `${title}\n${body}` : title);
-    },
-  });
-  
-  // Garantia de segurança: se o backend enviar um cargo desconhecido, usa 'funcionario'
+
   const safeRole = MENUS[userRole] ? userRole : 'funcionario';
   const menuItems = MENUS[safeRole];
 
@@ -89,11 +74,8 @@ export function TopBar({
 
   return (
     <div className="flex items-center gap-2 flex-wrap justify-end">
-      <div className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-gray-600">
-        <Mail className="w-4 h-4 text-gray-400" />
-        <span className="max-w-[180px] truncate">{userEmail}</span>
-      </div>
-
+      
+      {/* Alternar modo claro/escuro */}
       <button
         onClick={toggleTheme}
         title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
@@ -102,41 +84,12 @@ export function TopBar({
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
 
-      <button
-        onClick={permission !== 'granted' ? requestPermission : undefined}
-        title={
-          permission === 'granted'
-            ? 'Notificações ativadas'
-            : permission === 'denied'
-              ? 'Notificações bloqueadas no navegador'
-              : 'Ativar notificações'
-        }
-        disabled={permission === 'denied'}
-        className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
-          permission === 'granted'
-            ? 'bg-purple-100 text-purple-700'
-            : permission === 'denied'
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        }`}
-      >
-        {permission === 'denied' ? (
-          <BellOff className="w-4 h-4" />
-        ) : (
-          <Bell className="w-4 h-4" />
-        )}
-      </button>
-      {error && (
-        <span className="hidden lg:inline text-xs text-red-500 max-w-[160px] truncate" title={error}>
-          {error}
-        </span>
-      )}
-
-      {/* ✅ ADICIONADO: Em vez do <select>, mostramos a etiqueta com o Cargo real da API */}
+      {/* Etiqueta Visual do Cargo */}
       <div className="px-3 py-1.5 ml-2 bg-indigo-50 text-indigo-700 text-sm font-bold tracking-wide rounded-md capitalize border border-indigo-100 shadow-sm">
         {USER_TYPE_LABELS[safeRole] || safeRole}
       </div>
 
+      {/* Botão de Sair */}
       <button
         onClick={onLogout}
         title="Sair"
@@ -146,7 +99,7 @@ export function TopBar({
         <span className="hidden sm:inline">Sair</span>
       </button>
 
-      {/* Menu Dropdown mantido intacto */}
+      {/* Menu Dropdown de Navegação */}
       <div className="relative ml-2">
         <button
           onClick={() => setMenuOpen(!menuOpen)}

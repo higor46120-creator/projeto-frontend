@@ -12,10 +12,9 @@ import { PrivateRoute } from './components/PrivateRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { api } from './services/api';
 
+// Páginas
 import { LoginPage } from './pages/login/LoginPage';
 import { OAuth2RedirectHandler } from './pages/login/OAuth2RedirectHandler';
-import { HomePage } from './pages/home/HomePage';
-import { TopBar } from './components/TopBar';
 import { TicketForm } from './pages/helpdesk/components/TicketForm';
 import { TicketList } from './pages/helpdesk/components/TicketList';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
@@ -25,12 +24,14 @@ import { WebmailPage } from './pages/webmail/WebmailPage';
 import { CandidatePage } from './pages/candidate/CandidatePage';
 import ChamadosPage from './pages/chamados/ChamadosPage';
 
-import { FileText, List, ArrowLeft } from 'lucide-react';
+// Componentes
+import { TopBar } from './components/TopBar';
 import { SplashScreen } from './components/SplashScreen'; 
+import { FileText, List } from 'lucide-react';
 
+// ✅ O HelpDesk agora é a rota raiz '/'
 const PAGE_PATHS = {
-  home: '/',
-  helpdesk: '/helpdesk',
+  helpdesk: '/', 
   approver: '/aprovador',
   support: '/suporte',
   management: '/gestao',
@@ -52,9 +53,6 @@ function extractTickets(data) {
 function HelpTecApp() {
   const { user, logout } = useAuth();
   const userEmail = user?.email;
-  
-  // ✅ ESTADO DERIVADO: Extraímos o cargo (role) fornecido pelo back-end no JWT.
-  // O .toLowerCase() previne erros (ex: se a API enviar "Gestor" em vez de "gestor").
   const userRole = user?.role?.toLowerCase() || 'funcionario';
 
   const location = useLocation();
@@ -62,16 +60,14 @@ function HelpTecApp() {
   const pathname = location.pathname.replace(/\/+$/, '') || '/';
   const currentPage = PATH_PAGES[pathname];
   const setCurrentPage = (page) => navigate(PAGE_PATHS[page] ?? '/');
+  
   const [activeTab, setActiveTab] = useState('new');
-
   const [isInitializing, setIsInitializing] = useState(pathname === '/');
   
   // ==========================================
-  // O POLÍCIA DE TRÂNSITO (Redirecionamento Automático RBAC)
+  // POLÍCIA DE TRÂNSITO (Redirecionamento Automático)
   // ==========================================
   useEffect(() => {
-    // Apenas efetuamos o redirecionamento DEPOIS da Splash Screen (isInitializing === false) 
-    // E APENAS se o utilizador estiver na página inicial pura ('/')
     if (!isInitializing && pathname === '/') {
       switch (userRole) {
         case 'gestor':
@@ -85,14 +81,14 @@ function HelpTecApp() {
           break;
         case 'funcionario':
         default:
-          // Funciona como Fallback. Permanece na Home.
+          // Permanece na raiz ('/'), que agora é o HelpDesk
           break;
       }
     }
   }, [isInitializing, pathname, userRole, navigate]);
 
   // ==========================================
-  // PERSISTÊNCIA DE DADOS
+  // ESTADOS PERSISTENTES (LocalStorage)
   // ==========================================
   const [tickets, setTickets] = useState(() => {
     const salvos = localStorage.getItem('@helptec-tickets-oficiais');
@@ -112,6 +108,7 @@ function HelpTecApp() {
     localStorage.setItem('@helptec-pendentes', JSON.stringify(chamadosPendentes));
   }, [chamadosPendentes]);
 
+  // Busca inicial da API
   useEffect(() => {
     const isMockModeAtivo = localStorage.getItem('@helptec-modo-dev') === 'true';
     if (isMockModeAtivo) return; 
@@ -122,20 +119,20 @@ function HelpTecApp() {
       .catch((err) => console.error('Falha ao carregar chamados:', err));
   }, []);
 
-  // Bloqueio de renderização
+  // Bloqueio Visual da Splash Screen
   if (isInitializing) {
     return <SplashScreen onFinish={() => setIsInitializing(false)} />;
   }
 
+  // Lógica de Funções e Navegação
   const handleLogout = () => {
     localStorage.removeItem('@helptec-modo-dev');
     logout();
-    setCurrentPage('home');
+    setCurrentPage('helpdesk');
   };
 
   const handleNavigate = (itemId) => {
-    if (itemId === 'portal') setCurrentPage('home');
-    else if (itemId === 'helpdesk') setCurrentPage('helpdesk');
+    if (itemId === 'portal' || itemId === 'helpdesk') setCurrentPage('helpdesk');
     else if (itemId === 'approver') setCurrentPage('approver');
     else if (itemId === 'support') setCurrentPage('support');
     else if (itemId === 'management') setCurrentPage('management');
@@ -187,41 +184,37 @@ function HelpTecApp() {
     });
   };
 
-  // ✅ Modificado: Passamos userRole para a propriedade userType (para não quebrar a tipagem das páginas)
+  // ==========================================
+  // ROTEAMENTO DE COMPONENTES DE DASHBOARD
+  // ==========================================
   if (!currentPage) return <Navigate to="/" replace />;
-  if (currentPage === 'home') return <HomePage userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} onNavigateToHelpDesk={() => setCurrentPage('helpdesk')} />;
-  if (currentPage === 'approver') return <ApproverDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
-  if (currentPage === 'support') return <SupportDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
-  if (currentPage === 'management') return <ManagementPortal tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
-  if (currentPage === 'webmail') return <WebmailPage onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
-  if (currentPage === 'candidato') return <CandidatePage onBack={() => setCurrentPage('home')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
+  
+  // ✅ Removido o if da 'home'. Os botões onBack agora voltam para 'helpdesk'
+  if (currentPage === 'approver') return <ApproverDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('helpdesk')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
+  if (currentPage === 'support') return <SupportDashboard tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('helpdesk')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
+  if (currentPage === 'management') return <ManagementPortal tickets={tickets} onUpdateTicket={handleUpdateTicket} onBack={() => setCurrentPage('helpdesk')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
+  if (currentPage === 'webmail') return <WebmailPage onBack={() => setCurrentPage('helpdesk')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
+  if (currentPage === 'candidato') return <CandidatePage onBack={() => setCurrentPage('helpdesk')} userEmail={userEmail} onLogout={handleLogout} userType={userRole} onNavigate={handleNavigate} />;
 
+  // ==========================================
+  // RENDERIZAÇÃO PADRÃO (A Rota Raiz: HelpDesk)
+  // ==========================================
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => setCurrentPage('home')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="text-sm font-medium">Voltar</span>
-              </button>
-              <div className="h-6 w-px bg-gray-300" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Sistema de Help Desk</h1>
                 <p className="text-sm text-gray-500 mt-1">Portal do Solicitante</p>
               </div>
             </div>
-            {/* ✅ TopBar agora recebe userRole, e já não passamos o onUserTypeChange */}
             <TopBar userEmail={userEmail} onLogout={handleLogout} userRole={userRole} onNavigate={handleNavigate} />
           </div>
         </div>
       </header>
       
-      {/* Container e Tabs do HelpDesk */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-8">
