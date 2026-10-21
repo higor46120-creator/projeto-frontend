@@ -3,8 +3,14 @@ import { getToken, setToken as saveToken, clearToken } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// As claims casam com o que o JwtService.gerarToken() do backend grava:
-// sub (email), id, name, pictureUrl.
+// ✅ Dicionário de Perfis (ACL Front-end)
+const EMAIL_ROLE_MAP = {
+  'gestor@helptec.com': 'gestor',
+  'suporte@helptec.com': 'suporte',
+  'aprovador@helptec.com': 'aprovador',
+};
+
+// Função pura para decodificar o JWT e extrair as permissões
 function decodeJwt(token) {
   try {
     const payloadBase64 = token.split('.')[1];
@@ -15,11 +21,17 @@ function decodeJwt(token) {
         .join(''),
     );
     const claims = JSON.parse(payloadJson);
+    const userEmail = claims.sub; 
+    
+    // Define o cargo baseado no dicionário ou fallback da API
+    const assignedRole = EMAIL_ROLE_MAP[userEmail] || claims.role || claims.perfil || 'funcionario';
+    
     return {
-      email: claims.sub,
+      email: userEmail,
       id: claims.id,
       name: claims.name,
       pictureUrl: claims.pictureUrl,
+      role: assignedRole,
     };
   } catch {
     return null;
@@ -36,8 +48,6 @@ export function AuthProvider({ children }) {
     const token = getToken();
     if (token) {
       const decoded = decodeJwt(token);
-      // Token presente mas ilegível/expirado: limpa em vez de manter uma
-      // sessão "fantasma".
       if (!decoded) {
         clearToken();
         setUser(null);
