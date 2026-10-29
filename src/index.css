@@ -1,13 +1,23 @@
+/* Se estiver a usar Tailwind v4: */
+@import "tailwindcss";
+
+/* (Se estiver a usar Tailwind v3, troque a linha acima por:
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+) */
+
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html, body, #root {
-  margin: 0;
-  padding: 0;
   width: 100%;
-}
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  background-color: #050505;
+  color: #fff;
+  overflow-x: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

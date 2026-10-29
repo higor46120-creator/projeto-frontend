@@ -1,14 +1,16 @@
-import { initializeApp } from 'firebase/app'
+import { initializeApp } from "firebase/app";
+import { getMessaging } from "firebase/messaging";
 
-// Substitua pelos dados do seu projeto no Console do Firebase
-// (Configurações do projeto > Geral > Seus apps > Config do SDK)
 const firebaseConfig = {
-  apiKey: 'SUA_API_KEY',
-  authDomain: 'SEU_PROJETO.firebaseapp.com',
-  projectId: 'SEU_PROJETO',
-  storageBucket: 'SEU_PROJETO.appspot.com',
-  messagingSenderId: 'SEU_SENDER_ID',
-  appId: 'SEU_APP_ID',
-}
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_MESSAGING_ID",
+  appId: "SEU_APP_ID"
+};
 
-export const app = initializeApp(firebaseConfig)
+const app = initializeApp(firebaseConfig);
+export const messaging = getMessaging(app);
+
+export default app;
