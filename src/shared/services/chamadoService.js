@@ -1,4 +1,4 @@
-import api from './api';
+import api from '../../utils/api';
 
 export const chamadoService = {
   async buscar(filtro = {}, pageRequest = {}) {
