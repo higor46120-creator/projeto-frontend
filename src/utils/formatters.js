@@ -29,15 +29,15 @@ function normalizar(valor) {
 export function getPriorityColor(prioridade) {
   switch (normalizar(prioridade)) {
     case 'critica':
-      return 'bg-red-100 text-red-800';
+      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
     case 'alta':
-      return 'bg-orange-100 text-orange-800';
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300';
     case 'media':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300';
     case 'baixa':
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300';
   }
 }
 
@@ -62,16 +62,16 @@ export function formatarStatus(status) {
 export function getStatusColor(status) {
   switch (String(status ?? '').toUpperCase()) {
     case 'AGUARDANDO_APROVACAO':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300';
     case 'APROVADO':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
     case 'EM_ATENDIMENTO':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
     case 'RESOLVIDO':
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
     case 'CANCELADO':
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300';
   }
 }
