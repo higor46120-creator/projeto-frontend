@@ -14,7 +14,7 @@ const api = axios.create({
 // ==========================================
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('@HelpTec:token');
     
     // Verifica se é uma rota pública de autenticação
     const isPublicAuthRoute = 
@@ -51,7 +51,7 @@ api.interceptors.response.use(
       switch (response.status) {
         case 401:
           console.warn('[API] Sessão expirada. Redirecionando...');
-          localStorage.removeItem('token');
+          localStorage.removeItem('@HelpTec:token');
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
