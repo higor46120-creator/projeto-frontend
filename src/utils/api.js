@@ -52,8 +52,8 @@ api.interceptors.response.use(
         case 401:
           console.warn('[API] Sessão expirada. Redirecionando...');
           localStorage.removeItem('@HelpTec:token');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
+          if (window.location.pathname !== '/cadastro') {
+            window.location.href = '/cadastro';
           }
           break;
         case 403:
