@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, User, ChevronDown, FileText, List } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
-import TicketForm from "../../components/chamados/TicketForm";
-import { TicketList } from '../../components/chamados/TicketList';
+import { TicketForm } from './TicketForm';
+import { TicketList } from './TicketList';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
 

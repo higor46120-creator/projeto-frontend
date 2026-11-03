@@ -10,10 +10,13 @@
 @tailwind utilities;
 ) */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Dentro de @layer base, para NÃO anular as classes do Tailwind (p-4, mx-auto, gap-2...) */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html, body, #root {
