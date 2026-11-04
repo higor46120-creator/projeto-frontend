@@ -39,6 +39,7 @@ export function chamadoApiParaTela(c) {
     prioridade: PRIORIDADE_TELA[normalizar(c.prioridade)] ?? c.prioridade,
     status: STATUS_TELA[c.status] ?? c.status,
     data_abertura: c.dataAbertura,
+    data_resolucao: c.dataResolucao ?? c.dataFechamento ?? null, // AJUSTAR: nome do campo é suposição
     status_api: c.status, // status original da API (usado pela tela de suporte)
     // AJUSTAR: nomes abaixo são suposições
     id_suporte: c.idSuporte ?? c.suporte?.idUsuario ?? c.suporte?.id ?? null,

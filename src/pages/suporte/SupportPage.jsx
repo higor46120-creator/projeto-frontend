@@ -1,21 +1,15 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Play,
   CheckCircle,
   Clock,
   AlertTriangle,
   ChevronDown,
-  ArrowLeft,
   MessageCircle,
   Package,
-  Mail,
-  Sun,
-  Moon,
-  LogOut,
-  User,
 } from 'lucide-react';
-import { AuthContext } from '../../contexts/AuthContext';
+import { TopBar } from '../../components/TopBar';
+import { useTema } from '../../utils/useTema';
 import { ChatBox } from './components/ChatBox';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import { chamadoService } from '../../shared/services/chamadoService';
@@ -32,39 +26,14 @@ import {
 // É o id do técnico de suporte usado em "Iniciar Atendimento" e para saber quais chamados são "meus".
 const ID_SUPORTE_ATUAL = 1;
 
-const CHAVE_TEMA = '@helptec:tema'; // mesma chave do Portal do Solicitante
-
-// Atalhos do menu do topo
-const ITENS_MENU = [
-  { rota: '/dashboard', rotulo: 'Dashboard' },
-  { rota: '/meus-chamados', rotulo: 'Meus Chamados' },
-  { rota: '/chamados', rotulo: 'Todos os Chamados' },
-  { rota: '/aprovador', rotulo: 'Área do Aprovador' },
-  { rota: '/candidato', rotulo: 'Candidatos' },
-  { rota: '/webmail', rotulo: 'Webmail' },
-];
-
-// Seletor de perfil: leva para o portal de cada perfil
-const PERFIS = [
-  { valor: 'funcionario', rotulo: 'Funcionário', rota: '/meus-chamados' },
-  { valor: 'aprovador', rotulo: 'Aprovador', rota: '/aprovador' },
-  { valor: 'suporte', rotulo: 'Suporte', rota: '/suporte' },
-];
-
-function lerTemaSalvo() {
-  try {
-    return localStorage.getItem(CHAVE_TEMA) === 'light' ? 'light' : 'dark';
-  } catch {
-    return 'dark';
-  }
-}
+const COR_TOPBAR = {
+  glow: 'bg-purple-500',
+  bg: 'from-purple-100 to-fuchsia-50 dark:from-purple-900/60 dark:to-purple-900/30',
+  texto: 'text-purple-700 dark:text-purple-300',
+};
 
 export default function SupportPage() {
-  const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
-
-  const [tema, setTema] = useState(lerTemaSalvo);
-  const [menuAberto, setMenuAberto] = useState(false);
+  const [tema, alternarTema] = useTema();
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -94,21 +63,6 @@ export default function SupportPage() {
   useEffect(() => {
     carregarTickets();
   }, [carregarTickets]);
-
-  const alternarTema = () => {
-    const novo = tema === 'dark' ? 'light' : 'dark';
-    setTema(novo);
-    try {
-      localStorage.setItem(CHAVE_TEMA, novo);
-    } catch {
-      /* sem armazenamento: o tema só vale nesta visita */
-    }
-  };
-
-  const handleSair = () => {
-    logout();
-    navigate('/cadastro');
-  };
 
   // Fila: aprovados que ainda não têm técnico
   const queueTickets = tickets.filter((t) => t.status_api === 'APROVADO' && !t.id_suporte);
@@ -153,9 +107,6 @@ export default function SupportPage() {
     );
   };
 
-  const botaoTopo =
-    'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10';
-
   return (
     <div className={tema === 'dark' ? 'dark' : ''}>
       {chatTicket && (
@@ -182,95 +133,24 @@ export default function SupportPage() {
         />
 
         <div className="relative">
-          {/* Header */}
-          <header className="bg-linear-to-r from-[#f2e9f6] to-[#f8ecf1] dark:bg-none dark:bg-[#14141b] shadow-sm border-b border-[#e3d5e6] dark:border-white/10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="text-sm font-medium">Voltar</span>
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-11 w-11 items-center justify-center shrink-0">
-                      <span aria-hidden className="absolute inset-0 rounded-full bg-purple-500 opacity-30 blur-md" />
-                      <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-fuchsia-50 dark:from-purple-900/60 dark:to-purple-900/30 shadow-inner">
-                        <Package className="w-5 h-5 text-purple-700 dark:text-purple-300" />
-                      </span>
-                    </span>
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Área do Suporte Técnico</h1>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Atendimento de chamados</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setShowEquipmentManagement(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-fuchsia-600 to-fuchsia-500 hover:from-fuchsia-500 hover:to-fuchsia-400 text-white rounded-lg shadow-[0_0_20px_-4px_rgba(217,70,239,0.7)] hover:shadow-[0_0_28px_-4px_rgba(217,70,239,0.9)] transition-all font-semibold text-sm"
-                  >
-                    <Package className="w-4 h-4" />
-                    Gerenciar Equipamentos
-                  </button>
-
-                  <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
-                    <Mail className="w-4 h-4" />
-                  </button>
-                  <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
-                    {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </button>
-                  <button onClick={handleSair} className={botaoTopo}>
-                    <LogOut className="w-4 h-4" />
-                    Sair
-                  </button>
-
-                  <select
-                    value="suporte"
-                    onChange={(e) => {
-                      const perfil = PERFIS.find((p) => p.valor === e.target.value);
-                      if (perfil) navigate(perfil.rota);
-                    }}
-                    className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-[#14141b] text-gray-800 dark:text-gray-100 text-sm font-semibold px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {PERFIS.map((perfil) => (
-                      <option key={perfil.valor} value={perfil.valor}>
-                        {perfil.rotulo}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="relative">
-                    <button onClick={() => setMenuAberto((aberto) => !aberto)} className={botaoTopo}>
-                      <User className="w-4 h-4" />
-                      MENU
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-
-                    {menuAberto && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setMenuAberto(false)} />
-                        <div className="absolute right-0 mt-2 w-52 z-20 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b26] shadow-xl py-1">
-                          {ITENS_MENU.map((item) => (
-                            <button
-                              key={item.rota}
-                              onClick={() => navigate(item.rota)}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
-                            >
-                              {item.rotulo}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
+          <TopBar
+            titulo="Área do Suporte Técnico"
+            subtitulo="Atendimento de chamados"
+            icone={Package}
+            cor={COR_TOPBAR}
+            perfil="suporte"
+            tema={tema}
+            onAlternarTema={alternarTema}
+            acoes={
+              <button
+                onClick={() => setShowEquipmentManagement(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-fuchsia-600 to-fuchsia-500 hover:from-fuchsia-500 hover:to-fuchsia-400 text-white rounded-lg shadow-[0_0_20px_-4px_rgba(217,70,239,0.7)] hover:shadow-[0_0_28px_-4px_rgba(217,70,239,0.9)] transition-all font-semibold text-sm"
+              >
+                <Package className="w-4 h-4" />
+                Gerenciar Equipamentos
+              </button>
+            }
+          />
 
           {/* Stats */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

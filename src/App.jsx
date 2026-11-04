@@ -14,6 +14,7 @@ import CandidatePage from './pages/candidato/CandidatePage';
 import MeusChamadosPage from './pages/chamados/MeusChamadosPage';
 import SupportPage from './pages/suporte/SupportPage';
 import WebmailPage from './pages/webmail/WebmailPage';
+import ManagerPage from './pages/gestor/ManagerPage';
 
 // Componente para capturar o token OAuth2, autenticar no contexto e redirecionar
 const OAuth2RedirectHandler = () => {
@@ -157,6 +158,14 @@ function App() {
             element={
               <PrivateRoute>
                 <WebmailPage />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/gestor" 
+            element={
+              <PrivateRoute>
+                <ManagerPage />
               </PrivateRoute>
             } 
           />

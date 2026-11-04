@@ -1,6 +1,7 @@
+// src/components/TopBar.jsx
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Sun, Moon, LogOut, User, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Mail, Sun, Moon, Bell, LogOut, User, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 
 // Atalhos do menu
@@ -10,6 +11,7 @@ const ITENS_MENU = [
   { rota: '/chamados', rotulo: 'Todos os Chamados' },
   { rota: '/aprovador', rotulo: 'Área do Aprovador' },
   { rota: '/suporte', rotulo: 'Área do Suporte' },
+  { rota: '/gestor', rotulo: 'Portal do Gestor' },
   { rota: '/candidato', rotulo: 'Candidatos' },
   { rota: '/webmail', rotulo: 'Webmail' },
 ];
@@ -19,17 +21,12 @@ const PERFIS = [
   { valor: 'funcionario', rotulo: 'Funcionário', rota: '/meus-chamados' },
   { valor: 'aprovador', rotulo: 'Aprovador', rota: '/aprovador' },
   { valor: 'suporte', rotulo: 'Suporte', rota: '/suporte' },
+  { valor: 'gestor', rotulo: 'Gestor', rota: '/gestor' },
 ];
 
 const botaoTopo =
   'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10';
 
-/**
- * Cabeçalho das áreas (aprovador, suporte...).
- * - icone: componente do lucide-react; cor: { glow, bg, texto } com classes do Tailwind
- * - perfil: 'funcionario' | 'aprovador' | 'suporte' (valor mostrado no seletor)
- * - acoes: botões extras, mostrados antes dos ícones (opcional)
- */
 export function TopBar({ titulo, subtitulo, icone: Icone, cor, perfil, tema, onAlternarTema, acoes }) {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
@@ -53,12 +50,14 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, perfil, tema, onA
               <span className="text-sm font-medium">Voltar</span>
             </button>
             <div className="flex items-center gap-3">
-              <span className="relative flex h-11 w-11 items-center justify-center shrink-0">
-                <span aria-hidden className={`absolute inset-0 rounded-full ${cor.glow} opacity-30 blur-md`} />
-                <span className={`relative flex h-11 w-11 items-center justify-center rounded-full bg-linear-to-br ${cor.bg} shadow-inner`}>
-                  <Icone className={`w-5 h-5 ${cor.texto}`} />
+              {Icone && cor && (
+                <span className="relative flex h-11 w-11 items-center justify-center shrink-0">
+                  <span aria-hidden className={`absolute inset-0 rounded-full ${cor.glow} opacity-30 blur-md`} />
+                  <span className={`relative flex h-11 w-11 items-center justify-center rounded-full bg-linear-to-br ${cor.bg} shadow-inner`}>
+                    <Icone className={`w-5 h-5 ${cor.texto}`} />
+                  </span>
                 </span>
-              </span>
+              )}
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{titulo}</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitulo}</p>
@@ -74,6 +73,9 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, perfil, tema, onA
             </button>
             <button onClick={onAlternarTema} className={botaoTopo} title="Alternar tema">
               {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button className={botaoTopo} title="Notificações">
+              <Bell className="w-4 h-4" />
             </button>
             <button onClick={handleSair} className={botaoTopo}>
               <LogOut className="w-4 h-4" />
@@ -125,3 +127,5 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, perfil, tema, onA
     </header>
   );
 }
+
+export default TopBar;
