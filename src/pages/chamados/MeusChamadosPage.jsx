@@ -98,7 +98,11 @@ export default function MeusChamadosPage() {
       await carregarChamados();
     } catch (err) {
       console.error('Erro ao enviar chamado', err);
-      setError('Não foi possível enviar o chamado. Ele continua como rascunho.');
+      setError(
+        err.mensagemUsuario
+          ? `${err.mensagemUsuario} Ele continua como rascunho.`
+          : 'Não foi possível enviar o chamado. Ele continua como rascunho.'
+      );
     }
   };
 

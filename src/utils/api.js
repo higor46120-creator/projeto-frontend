@@ -10,16 +10,20 @@ const api = axios.create({
   },
 });
 
+if (import.meta.env.DEV) {
+  console.log(`[API] baseURL ativo: ${api.defaults.baseURL} (modo: ${import.meta.env.MODE})`);
+}
+
 // ==========================================
 // 2. Interceptador de Requisição (Request)
 // ==========================================
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('@HelpTec:token');
-    
+
     // Verifica se é uma rota pública de autenticação
-    const isPublicAuthRoute = 
-      config.url?.includes('/api/v1/auth/login') || 
+    const isPublicAuthRoute =
+      config.url?.includes('/api/v1/auth/login') ||
       config.url?.includes('/api/v1/auth/register');
 
     // Só adiciona o token se ele existir E não for rota de login/registro
