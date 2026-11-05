@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://10.5.36.7:8080',
+  // Endereço do back-end. Defina VITE_API_URL no .env (ex.: http://localhost:8080)
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -25,9 +26,8 @@ api.interceptors.request.use(
     if (token && token !== 'undefined' && token !== 'null' && !isPublicAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-     console.log(`[API Request] ${config.method?.toUpperCase()} -> ${config.url}`);
 
-    if (import.meta.env?.DEV || process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} -> ${config.url}`);
     }
 
