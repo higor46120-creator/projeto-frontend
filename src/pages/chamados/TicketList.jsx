@@ -86,7 +86,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
 
   // Mock de dados da Trilha de Auditoria
   const mockHistory = [
-    { id: 1, tipo: 'sistema', action: 'Chamado Aberto no Portal', date: ticket.data_abertura, user: ticket.solicitante_nome || 'Usuário Padrão' },
+    { id: 1, tipo: 'sistema', action: 'Chamado Aberto no Portal', date: ticket.data_abertura, user: ticket.solicitante_nome || 'Não identificado' },
     { id: 2, tipo: 'email', action: 'E-mail recebido com anexos de log.', date: new Date(Date.now() - 3600000).toISOString(), user: 'cliente@empresa.com' },
     { id: 3, tipo: 'nota', action: 'Análise técnica iniciada pelo suporte.', date: new Date().toISOString(), user: 'Equipe de Suporte' },
   ];
@@ -120,7 +120,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
             </h3>
             
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Solicitante: <span className="text-gray-600 dark:text-gray-300">{ticket.solicitante_nome || 'Usuário Padrão'}</span>
+              Solicitante: <span className="text-gray-600 dark:text-gray-300">{ticket.solicitante_nome || 'Não identificado'}</span>
             </p>
           </div>
         </div>
@@ -158,7 +158,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700/50">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Criticidade:</span>
+                <span className="text-xs text-gray-500">Prioridade:</span>
             <span className={`text-xs font-bold ${textColor}`}>
               {ticket.prioridade || 'Não definida'}
             </span>

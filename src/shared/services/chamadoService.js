@@ -1,4 +1,5 @@
 import api from '../../utils/api';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
 
 // O formulário trabalha com TEXTO (nome da sala, código do patrimônio, tipo do equipamento),
 // mas o back guarda só os ids (idSala, idEquipamento). As funções abaixo fazem a ponte
@@ -51,43 +52,53 @@ async function obterIdEquipamento(codigo) {
 }
 
 // Troca { sala, equipamento, codPatrimonio } (texto) por { idSala, idEquipamento } antes de enviar
+// e acrescenta o idUsuario (quem está abrindo o chamado), que o back exige.
 async function prepararChamado(dados) {
+  const idUsuario = obterIdUsuarioLogado();
+  if (!idUsuario) {
+    throw erroParaUsuario('Não foi possível identificar o usuário logado. Faça login novamente.');
+  }
+
   const { sala, equipamento, codPatrimonio, ...resto } = dados;
   const idSala = await obterIdSala(sala);
   const idEquipamento = await obterIdEquipamento(codPatrimonio);
-  return { ...resto, idSala, idEquipamento };
+  return { ...resto, idUsuario, idSala, idEquipamento };
 }
 
-// Preenche sala (nome), equipamento (tipo) e codPatrimonio em cada chamado para a tela exibir.
-// Se esta consulta extra falhar, a lista de chamados continua funcionando sem esses detalhes.
+// Preenche sala (nome), equipamento (tipo), codPatrimonio e solicitanteNome em cada chamado
+// para a tela exibir (o back devolve só os ids). Cada consulta é independente: se uma falhar,
+// a lista continua funcionando, só sem aquele detalhe.
 async function anexarDetalhes(pagina) {
   const itens = pagina?.itens || [];
-  if (!itens.some((c) => c.idSala != null || c.idEquipamento != null)) return pagina;
+  if (itens.length === 0) return pagina;
 
-  try {
-    const [salas, equipamentos] = await Promise.all([
-      api.get('/api/salas', { params: { page: 0, size: 1000 } }),
-      api.get('/api/equipamentos', { params: { page: 0, size: 1000 } }),
-    ]);
-    const salaPorId = new Map((salas.itens || []).map((s) => [s.idSala, s.nome]));
-    const equipPorId = new Map((equipamentos.itens || []).map((e) => [e.id, e]));
+  const [salas, equipamentos, usuarios] = await Promise.allSettled([
+    api.get('/api/salas', { params: { page: 0, size: 1000 } }),
+    api.get('/api/equipamentos', { params: { page: 0, size: 1000 } }),
+    api.get('/usuarios'),
+  ]);
+  [salas, equipamentos, usuarios].forEach((r) => {
+    if (r.status === 'rejected') console.error('Não foi possível carregar um detalhe dos chamados', r.reason);
+  });
 
-    return {
-      ...pagina,
-      itens: itens.map((c) => {
-        const equip = equipPorId.get(c.idEquipamento);
-        return {
-          ...c,
-          sala: salaPorId.get(c.idSala) ?? '',
-          equipamento: equip?.tipo ?? '',
-          codPatrimonio: equip?.patrimonio ?? '',
-        };
-      }),
-    };
-  } catch (err) {
-    console.error('Não foi possível carregar sala/equipamento dos chamados', err);
-    return pagina;
-  }
+  const lista = (r) => (r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : r.value?.itens || []) : []);
+  const salaPorId = new Map(lista(salas).map((s) => [s.idSala, s.nome]));
+  const equipPorId = new Map(lista(equipamentos).map((e) => [e.id, e]));
+  const nomePorIdUsuario = new Map(lista(usuarios).map((u) => [u.idUsuario, u.nome || u.email]));
+
+  return {
+    ...pagina,
+    itens: itens.map((c) => {
+      const equip = equipPorId.get(c.idEquipamento);
+      return {
+        ...c,
+        sala: salaPorId.get(c.idSala) ?? '',
+        equipamento: equip?.tipo ?? '',
+        codPatrimonio: equip?.patrimonio ?? '',
+        solicitanteNome: nomePorIdUsuario.get(c.idUsuario) ?? '',
+      };
+    }),
+  };
 }
 
 export const chamadoService = {
