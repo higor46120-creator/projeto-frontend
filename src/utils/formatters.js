@@ -1,8 +1,11 @@
 // Formatadores usados pelas páginas de chamados
 
+// Número -> 0007. Código longo (UUID) -> 6 primeiros caracteres em maiúsculas (ex.: 6548D3)
 export function formatarId(id) {
   if (id === null || id === undefined) return '-';
-  return String(id).padStart(4, '0');
+  const texto = String(id);
+  if (/^\d+$/.test(texto)) return texto.padStart(4, '0');
+  return texto.replace(/-/g, '').slice(0, 6).toUpperCase();
 }
 
 export function formatarDataHora(data) {

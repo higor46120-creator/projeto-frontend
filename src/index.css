@@ -10,10 +10,13 @@
 @tailwind utilities;
 ) */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Dentro de @layer base, para NÃO anular as classes do Tailwind (p-4, mx-auto, gap-2...) */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html, body, #root {
@@ -23,4 +26,105 @@ html, body, #root {
   color: #fff;
   overflow-x: hidden;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+/* Garante que o texto digitado seja sempre visível nos inputs, textareas e selects */
+input,
+textarea,
+select {
+  color: #111827; /* Texto escuro por padrão (para fundos claros/brancos) */
+}
+
+/* Quando o modo escuro estiver ativo e o input tiver fundo escuro */
+.dark input,
+.dark textarea,
+.dark select {
+  color: #f3f4f6; /* Texto claro */
+  background-color: #14141b; /* Fundo escuro para não ficar branco com letra branca */
+}
+
+/* Garante que os placeholders (texto de dica) fiquem visíveis em ambos os temas */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+/* ==========================================================================
+   CORREÇÃO GLOBAL DO MODO ESCURO (DARK MODE) PARA MODAIS, CARDS E INPUTS
+   ========================================================================== */
+
+/* 1. Converte fundos brancos e cinzas claros em fundos escuros quando .dark está ativo */
+.dark .bg-white {
+  background-color: #16161e !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-slate-50 {
+  background-color: #1a1b26 !important;
+  color: #e5e7eb !important;
+}
+
+/* 2. Converte caixas de formulário com fundo roxo/lilás claro (como "Novo Equipamento") */
+.dark .bg-purple-50,
+.dark .bg-violet-50,
+.dark .bg-indigo-50,
+.dark .from-purple-50,
+.dark .to-pink-50 {
+  background-color: #1f1b2e !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 3. Ajusta textos escuros para ficarem claros e legíveis no fundo escuro */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-900 {
+  color: #f9fafb !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+/* 4. Ajusta bordas claras para bordas discretas no modo escuro */
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-purple-100,
+.dark .border-purple-200 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* 5. Padroniza todos os inputs, selects e textareas no modo escuro e claro */
+input,
+textarea,
+select {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  color: #f3f4f6 !important;
+  background-color: #0f0f15 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+
+/* 6. Ajusta botões secundários cinzas (como o botão "Cancelar" ao lado de "Adicionar") */
+.dark .bg-gray-200 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e5e7eb !important;
 }

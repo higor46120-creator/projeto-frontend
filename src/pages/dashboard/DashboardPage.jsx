@@ -6,6 +6,7 @@ import {
   Headphones,
   User,
   Mail,
+  TrendingUp,
 } from 'lucide-react';
 
 // Um botão para cada página do sistema
@@ -51,6 +52,13 @@ const PAGINAS = [
     descricao: 'Caixa de entrada, enviados e rascunhos',
     icone: Mail,
     cor: 'from-indigo-500 to-violet-600',
+  },
+  {
+    rota: '/gestor',
+    titulo: 'Portal do Gestor',
+    descricao: 'Indicadores, gráficos e gestão de chamados',
+    icone: TrendingUp,
+    cor: 'from-violet-500 to-purple-600',
   },
 ];
 
