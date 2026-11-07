@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // ADICIONADO: importação do useEffect
+import { useState, useEffect, useContext } from 'react';
 import {
   Search,
   ArrowLeft,
@@ -14,11 +14,9 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
+import { ehGestor, rotaDoPerfil } from '../../utils/perfis';
 
-// TODO: ligar ao login real (hoje o AuthContext só guarda o token).
-// 'gestor' pode criar e editar qualquer perfil; qualquer outro valor só edita o perfil com o próprio e-mail.
-const USER_TYPE = 'gestor';
-const USER_EMAIL = '';
 
 const INITIAL_CANDIDATES = [
   {
@@ -92,8 +90,9 @@ function avatarGradientFor(seed) {
 
 export default function CandidatePage() {
   const navigate = useNavigate();
-  const userType = USER_TYPE;
-  const userEmail = USER_EMAIL;
+  // Todas as contas veem os candidatos; só o gestor cria e edita
+  const { perfil } = useContext(AuthContext);
+  const podeEditar = ehGestor(perfil);
   
   // MODIFICADO: Lazy Initialization (Inicialização Preguiçosa)
   // O React agora vai checar o disco (localStorage) antes de usar a lista padrão.
@@ -125,13 +124,8 @@ export default function CandidatePage() {
   );
   const selected = candidates.find((c) => c.id === selectedId) ?? null;
 
-  const canCreate = userType === 'gestor';
-
-  const canEdit = (candidate) => {
-    if (userType === 'gestor') return true;
-    if (!userEmail || !candidate?.email) return false;
-    return candidate.email.toLowerCase() === userEmail.toLowerCase();
-  };
+  const canCreate = podeEditar;
+  const canEdit = () => podeEditar;
 
   const openEdit = (candidate) => {
     setIsNewCandidate(false);
@@ -182,7 +176,7 @@ export default function CandidatePage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(rotaDoPerfil(perfil))}
               className="flex items-center gap-2 text-gray-600 hover:text-purple-700 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -317,7 +311,7 @@ export default function CandidatePage() {
                     </button>
                   ) : (
                     <div
-                      title="Apenas o Gestor ou o próprio usuário podem editar este perfil"
+                      title="Apenas o Gestor pode editar este perfil"
                       className="flex items-center gap-2 px-3 py-2 bg-gray-50 text-gray-400 text-sm font-medium rounded-lg shrink-0"
                     >
                       <Lock className="w-4 h-4" />

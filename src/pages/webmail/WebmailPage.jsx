@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import {
   Search,
   Star,
@@ -14,6 +14,8 @@ import {
   Mail,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
+import { rotaDoPerfil } from '../../utils/perfis';
 
 // TODO: ligar ao login real (hoje o AuthContext só guarda o token).
 // Este e-mail aparece como dono da caixa de entrada e como remetente dos e-mails enviados.
@@ -127,6 +129,7 @@ const EMPTY_MESSAGES = {
 
 export default function WebmailPage() {
   const navigate = useNavigate();
+  const { perfil } = useContext(AuthContext);
   const userEmail = USER_EMAIL;
   const [emails, setEmails] = useState(MOCK_EMAILS);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
@@ -248,7 +251,7 @@ export default function WebmailPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(rotaDoPerfil(perfil))}
               className="flex items-center gap-2 text-gray-600 hover:text-purple-700 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
