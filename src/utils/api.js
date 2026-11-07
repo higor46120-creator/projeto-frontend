@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://10.5.36.7:8080',
+  // Endereço do back-end. Defina VITE_API_URL no .env (ex.: http://localhost:8080)
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -9,25 +10,28 @@ const api = axios.create({
   },
 });
 
+if (import.meta.env.DEV) {
+  console.log(`[API] baseURL ativo: ${api.defaults.baseURL} (modo: ${import.meta.env.MODE})`);
+}
+
 // ==========================================
 // 2. Interceptador de Requisição (Request)
 // ==========================================
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('@HelpTec:token');
-    
+
     // Verifica se é uma rota pública de autenticação
-    const isPublicAuthRoute = 
-      config.url?.includes('/api/v1/auth/login') || 
+    const isPublicAuthRoute =
+      config.url?.includes('/api/v1/auth/login') ||
       config.url?.includes('/api/v1/auth/register');
 
     // Só adiciona o token se ele existir E não for rota de login/registro
     if (token && token !== 'undefined' && token !== 'null' && !isPublicAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-     console.log(`[API Request] ${config.method?.toUpperCase()} -> ${config.url}`);
 
-    if (import.meta.env?.DEV || process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} -> ${config.url}`);
     }
 

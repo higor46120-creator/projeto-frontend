@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, User, ChevronDown, FileText, List } from 'lucide-react';
+import { Sun, Moon, LogOut, Mail, Users, Bell, FileText, List } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { TicketForm } from './TicketForm';
 import { TicketList } from './TicketList';
@@ -8,16 +8,6 @@ import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
 
 const CHAVE_TEMA = '@helptec:tema';
-
-// Atalhos do menu do topo
-const ITENS_MENU = [
-  { rota: '/dashboard', rotulo: 'Dashboard' },
-  { rota: '/chamados', rotulo: 'Todos os Chamados' },
-  { rota: '/aprovador', rotulo: 'Área do Aprovador' },
-  { rota: '/suporte', rotulo: 'Área do Suporte' },
-  { rota: '/candidato', rotulo: 'Candidatos' },
-  { rota: '/webmail', rotulo: 'Webmail' },
-];
 
 function lerTemaSalvo() {
   try {
@@ -32,7 +22,6 @@ export default function MeusChamadosPage() {
   const { logout } = useContext(AuthContext);
 
   const [tema, setTema] = useState(lerTemaSalvo);
-  const [menuAberto, setMenuAberto] = useState(false);
 
   const [aba, setAba] = useState('novo'); // 'novo' | 'lista'
   const [chamados, setChamados] = useState([]);
@@ -98,7 +87,11 @@ export default function MeusChamadosPage() {
       await carregarChamados();
     } catch (err) {
       console.error('Erro ao enviar chamado', err);
-      setError('Não foi possível enviar o chamado. Ele continua como rascunho.');
+      setError(
+        err.mensagemUsuario
+          ? `${err.mensagemUsuario} Ele continua como rascunho.`
+          : 'Não foi possível enviar o chamado. Ele continua como rascunho.'
+      );
     }
   };
 
@@ -130,43 +123,26 @@ export default function MeusChamadosPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
-                {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-
               <span className="px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-600 text-xs font-semibold">
                 Funcionário
               </span>
 
+              <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">
+                <Users className="w-4 h-4" />
+              </button>
+              <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
+                <Mail className="w-4 h-4" />
+              </button>
+              <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
+                {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button className={botaoTopo} title="Notificações">
+                <Bell className="w-4 h-4" />
+              </button>
               <button onClick={handleSair} className={botaoTopo}>
                 <LogOut className="w-4 h-4" />
                 Sair
               </button>
-
-              <div className="relative">
-                <button onClick={() => setMenuAberto((aberto) => !aberto)} className={botaoTopo}>
-                  <User className="w-4 h-4" />
-                  MENU
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-
-                {menuAberto && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuAberto(false)} />
-                    <div className="absolute right-0 mt-2 w-52 z-20 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b26] shadow-xl py-1">
-                      {ITENS_MENU.map((item) => (
-                        <button
-                          key={item.rota}
-                          onClick={() => navigate(item.rota)}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
-                        >
-                          {item.rotulo}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </header>

@@ -4,11 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node generate-sw.js && vite",
-    "build": "node generate-sw.js && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
+  "dev": "node generate-sw.js && vite --mode dev-local",
+  "dev:local": "node generate-sw.js && vite --mode dev-local",
+  "dev:remoto": "node generate-sw.js && vite --mode dev-remoto",
+  "build": "node generate-sw.js && vite build",
+  "lint": "oxlint",
+  "preview": "vite preview"
+},
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.21.0",

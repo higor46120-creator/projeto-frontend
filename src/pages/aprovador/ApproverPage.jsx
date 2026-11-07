@@ -114,12 +114,11 @@ export default function ApproverPage() {
         />
 
         <div className="relative">
-          <TopBar
+                    <TopBar
             titulo="Área do Aprovador"
             subtitulo="Gerenciamento de aprovações"
             icone={Check}
             cor={COR_TOPBAR}
-            perfil="aprovador"
             tema={tema}
             onAlternarTema={alternarTema}
           />

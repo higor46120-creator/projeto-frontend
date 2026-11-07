@@ -1,18 +1,122 @@
 import api from '../../utils/api';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
+
+// O formulário trabalha com TEXTO (nome da sala, código do patrimônio, tipo do equipamento),
+// mas o back guarda só os ids (idSala, idEquipamento). As funções abaixo fazem a ponte
+// usando as rotas /api/salas e /api/equipamentos.
+
+function erroParaUsuario(mensagem) {
+  const erro = new Error(mensagem);
+  erro.mensagemUsuario = mensagem; // as telas mostram este texto
+  return erro;
+}
+
+// Procura a sala pelo nome (igual, sem diferenciar maiúsculas/minúsculas)
+async function obterIdSala(nome) {
+  const nomeLimpo = String(nome ?? '').trim();
+  if (!nomeLimpo) return null;
+
+  const resposta = await api.get('/api/salas', {
+    params: { nome: nomeLimpo, page: 0, size: 100 },
+  });
+  const sala = (resposta.itens || []).find(
+    (s) => String(s.nome ?? '').trim().toLowerCase() === nomeLimpo.toLowerCase()
+  );
+  if (!sala) {
+    throw erroParaUsuario(`A sala "${nomeLimpo}" não está cadastrada. Confira o nome da sala.`);
+  }
+  return sala.idSala;
+}
+
+// Procura o equipamento pelo código do patrimônio; se não achar e o valor for só número,
+// tenta como número da máquina (que é o id do equipamento)
+async function obterIdEquipamento(codigo) {
+  const valor = String(codigo ?? '').trim();
+  if (!valor) return null;
+
+  const resposta = await api.get('/api/equipamentos', { params: { page: 0, size: 1000 } });
+  const itens = resposta.itens || [];
+
+  const porPatrimonio = itens.find(
+    (e) => String(e.patrimonio ?? '').trim().toLowerCase() === valor.toLowerCase()
+  );
+  if (porPatrimonio) return porPatrimonio.id;
+
+  if (/^\d+$/.test(valor)) {
+    const porId = itens.find((e) => e.id === Number(valor));
+    if (porId) return porId.id;
+  }
+  throw erroParaUsuario(
+    `Nenhum equipamento encontrado com o código "${valor}". Confira o patrimônio ou o número da máquina.`
+  );
+}
+
+// Troca { sala, equipamento, codPatrimonio } (texto) por { idSala, idEquipamento } antes de enviar
+// e acrescenta o idUsuario (quem está abrindo o chamado), que o back exige.
+async function prepararChamado(dados) {
+  const idUsuario = obterIdUsuarioLogado();
+  if (!idUsuario) {
+    throw erroParaUsuario('Não foi possível identificar o usuário logado. Faça login novamente.');
+  }
+
+  const { sala, equipamento, codPatrimonio, ...resto } = dados;
+  const idSala = await obterIdSala(sala);
+  const idEquipamento = await obterIdEquipamento(codPatrimonio);
+  return { ...resto, idUsuario, idSala, idEquipamento };
+}
+
+// Preenche sala (nome), equipamento (tipo), codPatrimonio e solicitanteNome em cada chamado
+// para a tela exibir (o back devolve só os ids). Cada consulta é independente: se uma falhar,
+// a lista continua funcionando, só sem aquele detalhe.
+async function anexarDetalhes(pagina) {
+  const itens = pagina?.itens || [];
+  if (itens.length === 0) return pagina;
+
+  const [salas, equipamentos, usuarios] = await Promise.allSettled([
+    api.get('/api/salas', { params: { page: 0, size: 1000 } }),
+    api.get('/api/equipamentos', { params: { page: 0, size: 1000 } }),
+    api.get('/usuarios'),
+  ]);
+  [salas, equipamentos, usuarios].forEach((r) => {
+    if (r.status === 'rejected') console.error('Não foi possível carregar um detalhe dos chamados', r.reason);
+  });
+
+  const lista = (r) => (r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : r.value?.itens || []) : []);
+  const salaPorId = new Map(lista(salas).map((s) => [s.idSala, s.nome]));
+  const equipPorId = new Map(lista(equipamentos).map((e) => [e.id, e]));
+  const nomePorIdUsuario = new Map(lista(usuarios).map((u) => [u.idUsuario, u.nome || u.email]));
+
+  return {
+    ...pagina,
+    itens: itens.map((c) => {
+      const equip = equipPorId.get(c.idEquipamento);
+      return {
+        ...c,
+        sala: salaPorId.get(c.idSala) ?? '',
+        equipamento: equip?.tipo ?? '',
+        codPatrimonio: equip?.patrimonio ?? '',
+        solicitanteNome: nomePorIdUsuario.get(c.idUsuario) ?? '',
+      };
+    }),
+  };
+}
 
 export const chamadoService = {
   async buscar(filtro = {}, pageRequest = {}) {
-    return await api.get('/api/chamados', {
+    const pagina = await api.get('/api/chamados', {
       params: { ...filtro, ...pageRequest },
     });
+    return await anexarDetalhes(pagina);
   },
 
   async criar(dadosChamado) {
-    return await api.post('/api/chamados', dadosChamado);
+    return await api.post('/api/chamados', await prepararChamado(dadosChamado));
   },
 
   async buscarPorId(idChamado) {
-    return await api.get(`/api/chamados/${idChamado}`);
+    const chamado = await api.get(`/api/chamados/${idChamado}`);
+    const { itens } = await anexarDetalhes({ itens: [chamado] });
+    return itens[0];
   },
 
   async deletar(idChamado) {

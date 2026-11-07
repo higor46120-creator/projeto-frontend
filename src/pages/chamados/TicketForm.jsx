@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AlertCircle,
   Send,
@@ -20,6 +20,8 @@ import {
   ClipboardList,
   Lightbulb,
 } from 'lucide-react';
+import { userService } from '../../shared/services/userService';
+import { obterUsuarioLogado } from '../../utils/usuarioLogado';
 
 // Paleta alinhada à identidade visual da FIEC: cinza, roxo, azul, amarelo e vermelho.
 
@@ -169,9 +171,29 @@ const COLOR_STYLES = {
   },
 };
 export function TicketForm({ onSubmit }) {
+  // Nome de quem está logado: começa com o que dá para ler do token (nome ou e-mail)
+  // e é trocado pelo nome cadastrado assim que /usuarios/me responder.
+  const [nomeSolicitante, setNomeSolicitante] = useState(() => {
+    const usuario = obterUsuarioLogado();
+    return usuario?.nome || usuario?.email || '';
+  });
+
+  useEffect(() => {
+    let ativo = true;
+    userService
+      .me()
+      .then((me) => {
+        if (ativo && (me?.nome || me?.email)) setNomeSolicitante(me.nome || me.email);
+      })
+      .catch(() => {
+        /* sem /usuarios/me: fica com o nome lido do token */
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   const [formData, setFormData] = useState({
-    solicitante_nome: 'Usuário Padrão',
-    id_solicitante: 1,
     descricao: '',
     prioridade: 'Média',
     criticidade: 'Média',
@@ -188,10 +210,8 @@ export function TicketForm({ onSubmit }) {
       alert('Por favor, selecione um tipo de equipamento.');
       return;
     }
-    onSubmit(formData);
+    onSubmit({ ...formData, solicitante_nome: nomeSolicitante });
     setFormData({
-      solicitante_nome: 'Usuário Padrão',
-      id_solicitante: 1,
       descricao: '',
       prioridade: 'Média',
       criticidade: 'Média',

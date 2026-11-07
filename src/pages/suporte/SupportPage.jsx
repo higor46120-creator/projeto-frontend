@@ -133,12 +133,11 @@ export default function SupportPage() {
         />
 
         <div className="relative">
-          <TopBar
+                    <TopBar
             titulo="Área do Suporte Técnico"
             subtitulo="Atendimento de chamados"
             icone={Package}
             cor={COR_TOPBAR}
-            perfil="suporte"
             tema={tema}
             onAlternarTema={alternarTema}
             acoes={

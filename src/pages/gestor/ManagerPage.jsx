@@ -201,12 +201,11 @@ export default function ManagerPage() {
         />
 
         <div className="relative">
-          <TopBar
+                    <TopBar
             titulo="Portal de Gerenciamento"
             subtitulo="Indicadores e Gestão de Atendimentos"
             icone={TrendingUp}
             cor={COR_TOPBAR}
-            perfil="gestor"
             tema={tema}
             onAlternarTema={alternarTema}
             acoes={

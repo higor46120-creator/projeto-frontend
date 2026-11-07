@@ -7,14 +7,13 @@ import { PrivateRoute } from './shared/components/PrivateRoute';
 import './App.css';
 import splashImage from './assets/print certo.jpg'; 
 import RegisterFormComponent from './pages/cadastro/Cadastro';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import ChamadosPage from './pages/chamados/ChamadosPage';
 import ApproverPage from './pages/aprovador/ApproverPage';
 import CandidatePage from './pages/candidato/CandidatePage';
 import MeusChamadosPage from './pages/chamados/MeusChamadosPage';
 import SupportPage from './pages/suporte/SupportPage';
 import WebmailPage from './pages/webmail/WebmailPage';
 import ManagerPage from './pages/gestor/ManagerPage';
+import { PERFIL, rotaDoPerfil } from './utils/perfis';
 
 // Componente para capturar o token OAuth2, autenticar no contexto e redirecionar
 const OAuth2RedirectHandler = () => {
@@ -28,8 +27,8 @@ const OAuth2RedirectHandler = () => {
     if (token) {
       // Chama o login do AuthContext (salva em '@HelpTec:token' e atualiza o estado)
       login(token);
-      // Redireciona para o dashboard autenticado
-      navigate('/dashboard', { replace: true });
+      // Vai para "/", que leva cada conta para a sua área (ver IrParaMinhaArea)
+      navigate('/', { replace: true });
     } else {
       // Caso não venha token na URL, volta para a tela de cadastro/login
       navigate('/cadastro', { replace: true });
@@ -41,6 +40,12 @@ const OAuth2RedirectHandler = () => {
       <p>Processando autenticação...</p>
     </div>
   );
+};
+
+// Leva a conta logada para a área do seu perfil (USER -> Meus Chamados, APROVADOR -> /aprovador ...)
+const IrParaMinhaArea = () => {
+  const { perfil } = useContext(AuthContext);
+  return <Navigate to={rotaDoPerfil(perfil)} replace />;
 };
 
 // Componente Dashboard atualizado com botão de Logout
@@ -105,71 +110,67 @@ function App() {
           <Route path="/oauth2/ederect" element={<OAuth2RedirectHandler />} />
           <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
-          <Route 
-            path="/dashboard" 
+          {/* Cada conta só abre a sua área; as outras voltam para a própria área */}
+          <Route
+            path="/meus-chamados"
             element={
-              <PrivateRoute>
-                <DashboardPage />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/chamados" 
-            element={
-              <PrivateRoute>
-                <ChamadosPage />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/aprovador" 
-            element={
-              <PrivateRoute>
-                <ApproverPage />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/candidato" 
-            element={
-              <PrivateRoute>
-                <CandidatePage />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/meus-chamados" 
-            element={
-              <PrivateRoute>
+              <PrivateRoute perfis={[PERFIL.FUNCIONARIO]}>
                 <MeusChamadosPage />
               </PrivateRoute>
-            } 
+            }
           />
-          <Route 
-            path="/suporte" 
+          <Route
+            path="/aprovador"
             element={
-              <PrivateRoute>
+              <PrivateRoute perfis={[PERFIL.APROVADOR]}>
+                <ApproverPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/suporte"
+            element={
+              <PrivateRoute perfis={[PERFIL.SUPORTE]}>
                 <SupportPage />
               </PrivateRoute>
-            } 
+            }
           />
-          <Route 
-            path="/webmail" 
+          <Route
+            path="/gestor"
+            element={
+              <PrivateRoute perfis={[PERFIL.GESTOR, PERFIL.ADMIN]}>
+                <ManagerPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Páginas de todas as contas (sem "perfis") */}
+          <Route
+            path="/webmail"
             element={
               <PrivateRoute>
                 <WebmailPage />
               </PrivateRoute>
-            } 
+            }
           />
-          <Route 
-            path="/gestor" 
+          <Route
+            path="/candidato"
             element={
               <PrivateRoute>
-                <ManagerPage />
+                <CandidatePage />
               </PrivateRoute>
-            } 
+            }
           />
-          <Route path="*" element={<Navigate to="/cadastro" replace />} />
+
+          {/* "/" e qualquer outro endereço (ex.: /dashboard, /chamados) vão para a área da conta */}
+          <Route
+            path="*"
+            element={
+              <PrivateRoute>
+                <IrParaMinhaArea />
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
