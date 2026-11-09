@@ -19,7 +19,8 @@ export default function RegisterFormComponent(props) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    window.location = "http://localhost:8080";  // BACK URL
+    // Mesmo endereço do back definido em VITE_API_URL (.env); o login do Google começa nele
+    window.location = import.meta.env.VITE_API_URL || "http://localhost:8080";  // BACK URL
   },[])
 
   return(
