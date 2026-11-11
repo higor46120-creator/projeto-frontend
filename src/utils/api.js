@@ -22,9 +22,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem('@HelpTec:token');
 
     // Verifica se é uma rota pública de autenticação
-    const isPublicAuthRoute =
-      config.url?.includes('/api/v1/auth/login') ||
-      config.url?.includes('/api/v1/auth/register');
+    const isPublicAuthRoute = config.url?.includes('/api/v1/auth/');
 
     // Só adiciona o token se ele existir E não for rota de login/registro
     if (token && token !== 'undefined' && token !== 'null' && !isPublicAuthRoute) {

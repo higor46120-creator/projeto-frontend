@@ -60,7 +60,7 @@ export default function MeusChamadosPage() {
 
   const handleSair = () => {
     logout();
-    navigate('/cadastro');
+    navigate('/login');
   };
 
   // Formulário preenchido -> vira rascunho na lista
