@@ -12,8 +12,11 @@ import {
   X,
   Lock,
   UserPlus,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTema } from '../../utils/useTema';
 import { AuthContext } from '../../contexts/AuthContext';
 import { ehGestor, rotaDoPerfil } from '../../utils/perfis';
 
@@ -92,6 +95,8 @@ export default function CandidatePage() {
   const navigate = useNavigate();
   // Todas as contas veem os candidatos; só o gestor cria e edita
   const { perfil } = useContext(AuthContext);
+  // Mesmo tema (claro/escuro) das outras páginas, salvo no navegador
+  const [tema, alternarTema] = useTema();
   const podeEditar = ehGestor(perfil);
   
   // MODIFICADO: Lazy Initialization (Inicialização Preguiçosa)
@@ -170,32 +175,41 @@ export default function CandidatePage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-linear-to-b from-gray-50 via-white to-purple-50/40">
+    <div className={tema === 'dark' ? 'dark' : ''}>
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-b from-gray-50 via-white to-purple-50 dark:bg-none dark:bg-[#0c0a12] text-gray-900 dark:text-gray-100">
       {/* Header */}
-      <header className="bg-linear-to-r from-[#f2e9f6] to-[#f8ecf1] shadow-sm border-b border-[#e3d5e6]">
+      <header className="bg-linear-to-r from-[#f2e9f6] to-[#f8ecf1] dark:bg-none dark:bg-[#14141b] shadow-sm border-b border-[#e3d5e6] dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(rotaDoPerfil(perfil))}
-              className="flex items-center gap-2 text-gray-600 hover:text-purple-700 transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-purple-700 dark:text-gray-300 dark:hover:text-purple-300 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="hidden sm:inline">Voltar</span>
             </button>
-            <div className="hidden md:block h-6 w-px bg-black/10" />
+            <div className="hidden md:block h-6 w-px bg-black/10 dark:bg-white/10" />
             <div className="hidden md:flex items-center gap-2.5">
               <span className="relative flex h-9 w-9 items-center justify-center">
                 <span
                   aria-hidden
                   className="absolute inset-0 rounded-full bg-purple-500 opacity-40 blur-md"
                 />
-                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-fuchsia-50 shadow-inner">
-                  <User className="w-4 h-4 text-purple-700" />
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-fuchsia-50 dark:from-purple-900/60 dark:to-fuchsia-900/40 shadow-inner">
+                  <User className="w-4 h-4 text-purple-700 dark:text-purple-300" />
                 </span>
               </span>
               <h1 className="text-lg font-bold text-gray-900">Perfil</h1>
             </div>
           </div>
+
+          <button
+            onClick={alternarTema}
+            title="Alternar tema"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
+          >
+            {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
 
         </div>
       </header>
@@ -227,7 +241,7 @@ export default function CandidatePage() {
               </div>
             </div>
 
-            <div className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
+            <div className="divide-y divide-gray-100 dark:divide-white/10 max-h-[70vh] overflow-y-auto">
               {filtered.length === 0 ? (
                 <div className="p-8 text-center text-sm text-gray-400">
                   Nenhum candidato encontrado.
@@ -237,7 +251,7 @@ export default function CandidatePage() {
                   <button
                     key={candidate.id}
                     onClick={() => setSelectedId(candidate.id)}
-                    className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-l-4 ${selectedId === candidate.id ? 'bg-purple-50 border-purple-500' : 'border-transparent'}`}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border-l-4 ${selectedId === candidate.id ? 'bg-purple-50 border-purple-500 dark:bg-purple-500/15' : 'border-transparent'}`}
                   >
                     <div
                       className={`w-10 h-10 rounded-full bg-linear-to-br ${avatarGradientFor(candidate.fullName)} text-white flex items-center justify-center font-semibold shrink-0 shadow-sm`}
@@ -494,7 +508,7 @@ export default function CandidatePage() {
                     setIsEditing(false);
                     setIsNewCandidate(false);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>
@@ -510,15 +524,16 @@ export default function CandidatePage() {
         </div>
       )}
     </div>
+    </div>
   );
 }
 
 const INFO_ROW_COLORS = {
-  purple: 'bg-linear-to-br from-purple-100 to-fuchsia-50 text-purple-700',
-  sky: 'bg-linear-to-br from-sky-100 to-blue-50 text-sky-700',
-  rose: 'bg-linear-to-br from-rose-100 to-pink-50 text-rose-700',
-  emerald: 'bg-linear-to-br from-emerald-100 to-teal-50 text-emerald-700',
-  amber: 'bg-linear-to-br from-amber-100 to-orange-50 text-amber-700',
+  purple: 'bg-linear-to-br from-purple-100 to-fuchsia-50 text-purple-700 dark:from-purple-900/50 dark:to-fuchsia-900/30 dark:text-purple-300',
+  sky: 'bg-linear-to-br from-sky-100 to-blue-50 text-sky-700 dark:from-sky-900/50 dark:to-blue-900/30 dark:text-sky-300',
+  rose: 'bg-linear-to-br from-rose-100 to-pink-50 text-rose-700 dark:from-rose-900/50 dark:to-pink-900/30 dark:text-rose-300',
+  emerald: 'bg-linear-to-br from-emerald-100 to-teal-50 text-emerald-700 dark:from-emerald-900/50 dark:to-teal-900/30 dark:text-emerald-300',
+  amber: 'bg-linear-to-br from-amber-100 to-orange-50 text-amber-700 dark:from-amber-900/50 dark:to-orange-900/30 dark:text-amber-300',
 };
 
 function InfoRow({ icon: Icon, label, value, color = 'purple' }) {

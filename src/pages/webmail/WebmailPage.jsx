@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import {
   Search,
   Star,
@@ -12,82 +12,57 @@ import {
   X,
   RotateCcw,
   Mail,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTema } from '../../utils/useTema';
 import { AuthContext } from '../../contexts/AuthContext';
 import { rotaDoPerfil } from '../../utils/perfis';
+import { mensagemService } from '../../shared/services/mensagemService';
+import { userService } from '../../shared/services/userService';
 
-// TODO: ligar ao login real (hoje o AuthContext só guarda o token).
-// Este e-mail aparece como dono da caixa de entrada e como remetente dos e-mails enviados.
-const USER_EMAIL = 'voce@fiec.admin.br';
+// As mensagens vêm do back (/api/mensagens): são trocadas entre as contas cadastradas no HelpTec.
+const PASTAS_DO_BACK = ['inbox', 'sent', 'trash'];
+const ATUALIZAR_A_CADA_MS = 30000; // busca mensagens novas a cada 30 segundos
 
-const MOCK_EMAILS = [
-  {
-    id: 1,
-    folder: 'inbox',
-    from: 'rh@fiec.admin.br',
-    fromName: 'Recursos Humanos',
-    subject: 'Atualização do plano de saúde 2026',
-    preview: 'Prezados, informamos que a partir do próximo mês o plano de saúde...',
-    body: 'Prezados,\n\nInformamos que a partir do próximo mês o plano de saúde institucional passará por atualizações. Novas carências e coberturas estarão disponíveis no portal do servidor.\n\nQualquer dúvida, procure o setor de RH.\n\nAtenciosamente,\nRecursos Humanos',
-    date: 'Hoje, 09:12',
-    read: false,
-    starred: true,
-    hasAttachment: true,
-  },
-  {
-    id: 2,
-    folder: 'inbox',
-    from: 'suporte@fiec.admin.br',
-    fromName: 'Suporte HelpTec',
-    subject: 'Chamado #1042 atualizado',
-    preview: 'Seu chamado sobre "Computador não liga" foi atualizado para em andamento...',
-    body: 'Olá,\n\nSeu chamado #1042 referente a "Computador não liga" foi atualizado para o status Em Andamento. Nossa equipe técnica entrará em contato em breve.\n\nAcompanhe pelo Portal do Solicitante.',
-    date: 'Hoje, 08:40',
-    read: false,
-    starred: false,
+// "Hoje, 09:12" / "Ontem, 17:05" / "15/08/2026"
+function formatarData(iso) {
+  if (!iso) return '';
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return '';
+  const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const hoje = new Date();
+  const ontem = new Date();
+  ontem.setDate(hoje.getDate() - 1);
+  if (data.toDateString() === hoje.toDateString()) return `Hoje, ${hora}`;
+  if (data.toDateString() === ontem.toDateString()) return `Ontem, ${hora}`;
+  return data.toLocaleDateString('pt-BR');
+}
+
+// Mensagem do back -> formato que a tela usa
+function paraTela(m, pasta) {
+  const corpo = m.corpo ?? '';
+  return {
+    id: m.id,
+    folder: pasta,
+    from: m.remetenteEmail,
+    fromName: m.remetenteNome || m.remetenteEmail,
+    to: m.destinatarioEmail,
+    subject: m.assunto,
+    preview: corpo.replace(/\s+/g, ' ').slice(0, 80),
+    body: corpo,
+    date: formatarData(m.dataEnvio),
+    read: m.lida,
+    starred: m.favorita,
     hasAttachment: false,
-  },
-  {
-    id: 3,
-    folder: 'inbox',
-    from: 'diretoria@fiec.admin.br',
-    fromName: 'Diretoria',
-    subject: 'Reunião geral - Sexta-feira 10h',
-    preview: 'Convocamos todos os colaboradores para a reunião geral trimestral...',
-    body: 'Prezados colaboradores,\n\nConvocamos todos para a reunião geral trimestral, que acontecerá na sexta-feira às 10h no auditório principal.\n\nPauta: resultados do trimestre e próximos passos institucionais.',
-    date: 'Ontem, 17:05',
-    read: true,
-    starred: false,
-    hasAttachment: false,
-  },
-  {
-    id: 4,
-    folder: 'inbox',
-    from: 'licitacoes@fiec.admin.br',
-    fromName: 'Setor de Licitações',
-    subject: 'Edital nº 018/2026 publicado',
-    preview: 'Informamos a publicação do edital nº 018/2026 referente à aquisição de...',
-    body: 'Prezados,\n\nInformamos a publicação do edital nº 018/2026, referente à aquisição de equipamentos de informática. O documento completo está disponível na área de Licitações do portal.',
-    date: 'Ontem, 14:22',
-    read: true,
-    starred: false,
-    hasAttachment: true,
-  },
-  {
-    id: 5,
-    folder: 'inbox',
-    from: 'no-reply@fiec.admin.br',
-    fromName: 'Sistema HelpTec',
-    subject: 'Sua senha expira em 5 dias',
-    preview: 'Sua senha de acesso ao portal expira em 5 dias. Para evitar o bloqueio...',
-    body: 'Olá,\n\nSua senha de acesso ao portal expira em 5 dias. Para evitar o bloqueio da sua conta, acesse o menu de configurações e realize a alteração.\n\nEste é um e-mail automático, não responda.',
-    date: '15/08/2026',
-    read: true,
-    starred: false,
-    hasAttachment: false,
-  },
-];
+  };
+}
+
+// Mensagem de erro que o back manda ({ mensagem: "..." }) ou um texto padrão
+function mensagemDeErro(err, padrao) {
+  return err?.response?.data?.mensagem || padrao;
+}
 
 const FOLDERS = [
   { id: 'inbox', label: 'Caixa de entrada', icon: Inbox },
@@ -129,9 +104,16 @@ const EMPTY_MESSAGES = {
 
 export default function WebmailPage() {
   const navigate = useNavigate();
-  const { perfil } = useContext(AuthContext);
-  const userEmail = USER_EMAIL;
-  const [emails, setEmails] = useState(MOCK_EMAILS);
+  // Conta logada (vem de /usuarios/me no login): dona da caixa e remetente dos e-mails enviados
+  const { perfil, usuario } = useContext(AuthContext);
+  // Mesmo tema (claro/escuro) das outras páginas, salvo no navegador
+  const [tema, alternarTema] = useTema();
+  const userEmail = usuario?.email ?? '';
+  const [emails, setEmails] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroCarregar, setErroCarregar] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [contas, setContas] = useState([]); // e-mails cadastrados, para sugerir no "Para"
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedEmailId, setSelectedEmailId] = useState(null);
   const [search, setSearch] = useState('');
@@ -142,6 +124,34 @@ export default function WebmailPage() {
   const [composeBody, setComposeBody] = useState('');
   const [composeError, setComposeError] = useState('');
   
+  // Busca as 3 pastas no back (caixa de entrada, enviados e lixeira)
+  const carregarMensagens = useCallback(async () => {
+    try {
+      const listas = await Promise.all(PASTAS_DO_BACK.map((pasta) => mensagemService.buscar(pasta)));
+      setEmails(listas.flatMap((lista, i) => (lista || []).map((m) => paraTela(m, PASTAS_DO_BACK[i]))));
+      setErroCarregar('');
+    } catch (err) {
+      console.error('Erro ao carregar mensagens', err);
+      setErroCarregar('Não foi possível carregar as mensagens. Confira se o back-end está rodando.');
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarMensagens();
+    const intervalo = setInterval(carregarMensagens, ATUALIZAR_A_CADA_MS);
+    return () => clearInterval(intervalo);
+  }, [carregarMensagens]);
+
+  // Contas cadastradas (menos a própria), para sugerir no campo "Para"
+  useEffect(() => {
+    userService
+      .listarTodos()
+      .then((lista) => setContas((lista || []).filter((u) => u.email && u.email !== userEmail)))
+      .catch(() => setContas([]));
+  }, [userEmail]);
+
   const selectedEmail = emails.find((e) => e.id === selectedEmailId) ?? null;
   
   const filteredEmails = emails
@@ -166,39 +176,52 @@ export default function WebmailPage() {
   
   const handleSelectEmail = (id) => {
     setSelectedEmailId(id);
-    setEmails((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, read: true } : e))
-    );
+    const email = emails.find((e) => e.id === id);
+    if (email && !email.read) {
+      setEmails((prev) => prev.map((e) => (e.id === id ? { ...e, read: true } : e)));
+      mensagemService.marcarComoLida(id).catch((err) => console.error('Erro ao marcar como lida', err));
+    }
   };
-  
-  const toggleStar = (id, e) => {
+
+  const toggleStar = async (id, e) => {
     e.stopPropagation();
     setEmails((prev) =>
       prev.map((email) => (email.id === id ? { ...email, starred: !email.starred } : email))
     );
+    try {
+      await mensagemService.alternarFavorita(id);
+    } catch (err) {
+      console.error('Erro ao favoritar', err);
+      carregarMensagens();
+    }
   };
 
-  const handleDelete = (id, e) => {
+  const handleDelete = async (id, e) => {
     e?.stopPropagation();
     const email = emails.find((em) => em.id === id);
     if (!email) return;
-    
-    if (email.folder === 'trash') {
-      setEmails((prev) => prev.filter((em) => em.id !== id));
-    } else {
-      setEmails((prev) =>
-        prev.map((em) => (em.id === id ? { ...em, folder: 'trash' } : em))
-      );
+    try {
+      if (email.folder === 'trash') {
+        await mensagemService.deletar(id); // apaga de vez (só para você)
+      } else {
+        await mensagemService.moverParaLixeira(id);
+      }
+    } catch (err) {
+      console.error('Erro ao excluir mensagem', err);
     }
     if (selectedEmailId === id) setSelectedEmailId(null);
+    carregarMensagens();
   };
 
-  const handleRestore = (id, e) => {
+  const handleRestore = async (id, e) => {
     e?.stopPropagation();
-    setEmails((prev) =>
-      prev.map((em) => (em.id === id ? { ...em, folder: 'inbox' } : em))
-    );
+    try {
+      await mensagemService.restaurar(id);
+    } catch (err) {
+      console.error('Erro ao restaurar mensagem', err);
+    }
     if (selectedEmailId === id) setSelectedEmailId(null);
+    carregarMensagens();
   };
   
   const openCompose = () => {
@@ -209,7 +232,7 @@ export default function WebmailPage() {
     setIsComposing(true);
   };
   
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     const to = composeTo.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -222,52 +245,58 @@ export default function WebmailPage() {
       setComposeError('Informe um assunto para o e-mail.');
       return;
     }
-    
-    const newEmail = {
-      id: Date.now(),
-      folder: 'sent',
-      from: userEmail,
-      fromName: 'Eu', 
-      to,
-      subject: composeSubject.trim(),
-      preview: composeBody.trim().slice(0, 80),
-      body: composeBody.trim(),
-      date: 'Agora',
-      read: true,
-      starred: false,
-      hasAttachment: false,
-    };
-    
-    setEmails((prev) => [newEmail, ...prev]);
-    setIsComposing(false);
-    setSelectedFolder('sent');
-    setSelectedEmailId(newEmail.id);
+
+    setEnviando(true);
+    try {
+      const enviada = await mensagemService.enviar({
+        para: to,
+        assunto: composeSubject.trim(),
+        corpo: composeBody,
+      });
+      setIsComposing(false);
+      await carregarMensagens();
+      setSelectedFolder('sent');
+      setSelectedEmailId(enviada?.id ?? null);
+    } catch (err) {
+      setComposeError(mensagemDeErro(err, 'Não foi possível enviar a mensagem.'));
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-linear-to-b from-gray-50 via-white to-purple-50/40">
+    <div className={tema === 'dark' ? 'dark' : ''}>
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-b from-gray-50 via-white to-purple-50 dark:bg-none dark:bg-[#0c0a12] text-gray-900 dark:text-gray-100">
       {/* Header */}
-      <header className="bg-linear-to-r from-[#f2e9f6] to-[#f8ecf1] shadow-sm border-b border-[#e3d5e6]">
+      <header className="bg-linear-to-r from-[#f2e9f6] to-[#f8ecf1] dark:bg-none dark:bg-[#14141b] shadow-sm border-b border-[#e3d5e6] dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(rotaDoPerfil(perfil))}
-              className="flex items-center gap-2 text-gray-600 hover:text-purple-700 transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-purple-700 dark:text-gray-300 dark:hover:text-purple-300 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="hidden sm:inline">Voltar</span>
             </button>
-            <div className="hidden md:block h-6 w-px bg-black/10" />
+            <div className="hidden md:block h-6 w-px bg-black/10 dark:bg-white/10" />
             <div className="hidden md:flex items-center gap-2.5">
               <span className="relative flex h-9 w-9 items-center justify-center">
                 <span aria-hidden className="absolute inset-0 rounded-full bg-purple-500 opacity-40 blur-md" />
-                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-fuchsia-50 shadow-inner">
-                  <Mail className="w-4 h-4 text-purple-700" />
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-fuchsia-50 dark:from-purple-900/60 dark:to-fuchsia-900/40 shadow-inner">
+                  <Mail className="w-4 h-4 text-purple-700 dark:text-purple-300" />
                 </span>
               </span>
               <h1 className="text-lg font-bold text-gray-900">Webmail</h1>
             </div>
           </div>
+
+          <button
+            onClick={alternarTema}
+            title="Alternar tema"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
+          >
+            {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       </header>
 
@@ -304,7 +333,7 @@ export default function WebmailPage() {
                     setSelectedFolder(folder.id);
                     setSelectedEmailId(null);
                   }}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-1 ${isActive ? `bg-linear-to-r ${colors.activeBg} text-gray-900` : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-1 ${isActive ? `bg-linear-to-r ${colors.activeBg} text-gray-900 dark:bg-none dark:bg-white/10` : 'text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5'}`}
                 >
                   <span className="flex items-center gap-2">
                     <Icon className={`w-4 h-4 ${isActive ? colors.icon : 'text-gray-400'}`} />
@@ -335,8 +364,12 @@ export default function WebmailPage() {
               </div>
             </div>
 
-            <div className="divide-y divide-gray-100 max-h-[65vh] overflow-y-auto">
-              {filteredEmails.length === 0 ? (
+            <div className="divide-y divide-gray-100 dark:divide-white/10 max-h-[65vh] overflow-y-auto">
+              {erroCarregar ? (
+                <div className="p-8 text-center text-sm text-red-600 dark:text-red-400">{erroCarregar}</div>
+              ) : carregando ? (
+                <div className="p-8 text-center text-sm text-gray-400">Carregando mensagens...</div>
+              ) : filteredEmails.length === 0 ? (
                 <div className="p-8 text-center text-sm text-gray-400">
                   {EMPTY_MESSAGES[selectedFolder]}
                 </div>
@@ -349,7 +382,7 @@ export default function WebmailPage() {
                     <button
                       key={email.id}
                       onClick={() => handleSelectEmail(email.id)}
-                      className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors border-l-4 ${selectedEmailId === email.id ? 'bg-purple-50 border-purple-500' : !email.read ? 'bg-fuchsia-50/40 border-fuchsia-300' : 'border-transparent'}`}
+                      className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border-l-4 ${selectedEmailId === email.id ? 'bg-purple-50 border-purple-500 dark:bg-purple-500/15' : !email.read ? 'bg-fuchsia-50/40 border-fuchsia-300 dark:bg-fuchsia-500/10' : 'border-transparent'}`}
                     >
                       <div className={`w-9 h-9 rounded-full bg-linear-to-br ${avatarGradientFor(avatarLabel)} text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-sm`}>
                         {charLabel}
@@ -479,11 +512,20 @@ export default function WebmailPage() {
                     setComposeTo(e.target.value);
                     if (composeError) setComposeError('');
                   }}
-                  placeholder="destinatario@exemplo.com"
+                  placeholder="e-mail de uma conta do HelpTec"
+                  list="contas-helptec"
                   autoFocus
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-500"
                 />
               </div>
+
+              <datalist id="contas-helptec">
+                {contas.map((conta) => (
+                  <option key={conta.email} value={conta.email}>
+                    {conta.nome}
+                  </option>
+                ))}
+              </datalist>
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Assunto</label>
@@ -513,18 +555,19 @@ export default function WebmailPage() {
               {composeError && <p className="text-sm text-red-600">{composeError}</p>}
 
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setIsComposing(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <button type="button" onClick={() => setIsComposing(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                   Cancelar
                 </button>
-                <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 text-white text-sm font-semibold rounded-lg shadow-[0_0_20px_-4px_rgba(168,85,247,0.65)] hover:shadow-[0_0_28px_-4px_rgba(168,85,247,0.85)] transition-all">
+                <button type="submit" disabled={enviando} className="disabled:opacity-60 flex items-center gap-2 px-4 py-2 bg-linear-to-r from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 text-white text-sm font-semibold rounded-lg shadow-[0_0_20px_-4px_rgba(168,85,247,0.65)] hover:shadow-[0_0_28px_-4px_rgba(168,85,247,0.85)] transition-all">
                   <Send className="w-4 h-4" />
-                  Enviar
+                  {enviando ? 'Enviando...' : 'Enviar'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

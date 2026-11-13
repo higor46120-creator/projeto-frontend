@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev": "node generate-sw.js && vite --mode dev-local",
-  "dev:local": "node generate-sw.js && vite --mode dev-local",
-  "dev:remoto": "node generate-sw.js && vite --mode dev-remoto",
-  "build": "node generate-sw.js && vite build",
-  "lint": "oxlint",
+  "dev": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
+  "dev:local": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
+  "dev:remoto": "node scripts/generate-firebase-sw.js --mode dev-remoto && vite --mode dev-remoto",
+  "build": "node scripts/generate-firebase-sw.js --mode production && vite build",
+  "lint": "eslint .",
   "preview": "vite preview"
 },
   "dependencies": {

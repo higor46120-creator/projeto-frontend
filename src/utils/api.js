@@ -22,9 +22,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem('@HelpTec:token');
 
     // Verifica se é uma rota pública de autenticação
-    const isPublicAuthRoute =
-      config.url?.includes('/api/v1/auth/login') ||
-      config.url?.includes('/api/v1/auth/register');
+    const isPublicAuthRoute = config.url?.includes('/api/v1/auth/');
 
     // Só adiciona o token se ele existir E não for rota de login/registro
     if (token && token !== 'undefined' && token !== 'null' && !isPublicAuthRoute) {
@@ -54,6 +52,12 @@ api.interceptors.response.use(
     if (response) {
       switch (response.status) {
         case 401:
+          // 401 no próprio login (/api/v1/auth/...): o login foi recusado.
+          // Não redireciona, para a tela mostrar o motivo do erro.
+          if (error.config?.url?.includes('/api/v1/auth/')) {
+            console.error('[API] Login recusado pelo back (401).', response.data);
+            break;
+          }
           console.warn('[API] Sessão expirada. Redirecionando...');
           localStorage.removeItem('@HelpTec:token');
           if (window.location.pathname !== '/login') {

@@ -15,7 +15,7 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, tema, onAlternarT
 
   const handleSair = () => {
     logout();
-    navigate('/cadastro');
+    navigate('/login');
   };
 
   return (

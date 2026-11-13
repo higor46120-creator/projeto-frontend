@@ -12,7 +12,7 @@ export const PrivateRoute = ({ children, perfis }) => {
     useContext(AuthContext);
 
   if (!isAuthenticated) {
-    return <Navigate to="/cadastro" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (carregandoUsuario) {
