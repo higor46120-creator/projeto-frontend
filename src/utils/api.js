@@ -52,6 +52,12 @@ api.interceptors.response.use(
     if (response) {
       switch (response.status) {
         case 401:
+          // 401 no próprio login (/api/v1/auth/...): o login foi recusado.
+          // Não redireciona, para a tela mostrar o motivo do erro.
+          if (error.config?.url?.includes('/api/v1/auth/')) {
+            console.error('[API] Login recusado pelo back (401).', response.data);
+            break;
+          }
           console.warn('[API] Sessão expirada. Redirecionando...');
           localStorage.removeItem('@HelpTec:token');
           if (window.location.pathname !== '/login') {
