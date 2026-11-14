@@ -541,6 +541,11 @@ export function TicketForm({ onSubmit }) {
               equipamento.
             </li>
             <li className="flex gap-2">
+              <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-green-600 shrink-0" />
+              Se o equipamento ainda não estiver cadastrado, ele é cadastrado
+              automaticamente quando você envia o chamado.
+            </li>
+            <li className="flex gap-2">
               <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-blue-600 shrink-0" />
               Quanto mais detalhes na descrição, mais rápido o suporte resolve.
             </li>

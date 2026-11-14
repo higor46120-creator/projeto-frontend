@@ -26,6 +26,7 @@ const PRIORIDADE_TELA = {
 const STATUS_TELA = {
   AGUARDANDO_APROVACAO: 'Aberto',
   APROVADO: 'Em Andamento',
+  REPROVADO: 'Reprovado',
   EM_ATENDIMENTO: 'Em Andamento',
   RESOLVIDO: 'Resolvido',
   CANCELADO: 'Fechado',
@@ -39,10 +40,12 @@ export function chamadoApiParaTela(c) {
     prioridade: PRIORIDADE_TELA[normalizar(c.prioridade)] ?? c.prioridade,
     status: STATUS_TELA[c.status] ?? c.status,
     data_abertura: c.dataAbertura,
-    data_resolucao: c.dataResolucao ?? c.dataFechamento ?? null, // AJUSTAR: nome do campo é suposição
+    data_resolucao: c.dataResolucao ?? c.dataFinal ?? null,
     status_api: c.status, // status original da API (usado pela tela de suporte)
     // AJUSTAR: nomes abaixo são suposições
-    id_suporte: c.idSuporte ?? c.suporte?.idUsuario ?? c.suporte?.id ?? null,
+    id_suporte: c.idSuporte ?? null,
+    suporte_nome: c.suporteNome ?? '',
+    resolucao: c.resolucao ?? '',
     criticidade: texto(c.criticidade),
     // AJUSTAR: nomes abaixo são suposições (não sei como a API devolve esses campos)
     solicitante_nome: texto(c.solicitante ?? c.solicitanteNome),

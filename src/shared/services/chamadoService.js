@@ -28,31 +28,9 @@ async function obterIdSala(nome) {
   return sala.idSala;
 }
 
-// Procura o equipamento pelo código do patrimônio; se não achar e o valor for só número,
-// tenta como número da máquina (que é o id do equipamento)
-async function obterIdEquipamento(codigo) {
-  const valor = String(codigo ?? '').trim();
-  if (!valor) return null;
-
-  const resposta = await api.get('/api/equipamentos', { params: { page: 0, size: 1000 } });
-  const itens = resposta.itens || [];
-
-  const porPatrimonio = itens.find(
-    (e) => String(e.patrimonio ?? '').trim().toLowerCase() === valor.toLowerCase()
-  );
-  if (porPatrimonio) return porPatrimonio.id;
-
-  if (/^\d+$/.test(valor)) {
-    const porId = itens.find((e) => e.id === Number(valor));
-    if (porId) return porId.id;
-  }
-  throw erroParaUsuario(
-    `Nenhum equipamento encontrado com o código "${valor}". Confira o patrimônio ou o número da máquina.`
-  );
-}
-
-// Troca { sala, equipamento, codPatrimonio } (texto) por { idSala, idEquipamento } antes de enviar
-// e acrescenta o idUsuario (quem está abrindo o chamado), que o back exige.
+// Troca o nome da sala pelo idSala e acrescenta o idUsuario (quem está abrindo o chamado).
+// O equipamento vai como texto (tipo + patrimônio): o back procura pelo patrimônio e,
+// se ainda não existir, cadastra o equipamento sozinho — o funcionário não depende do suporte.
 async function prepararChamado(dados) {
   const idUsuario = obterIdUsuarioLogado();
   if (!idUsuario) {
@@ -61,8 +39,13 @@ async function prepararChamado(dados) {
 
   const { sala, equipamento, codPatrimonio, ...resto } = dados;
   const idSala = await obterIdSala(sala);
-  const idEquipamento = await obterIdEquipamento(codPatrimonio);
-  return { ...resto, idUsuario, idSala, idEquipamento };
+  return {
+    ...resto,
+    idUsuario,
+    idSala,
+    equipamento: String(equipamento ?? '').trim(),
+    codPatrimonio: String(codPatrimonio ?? '').trim(),
+  };
 }
 
 // Preenche sala (nome), equipamento (tipo), codPatrimonio e solicitanteNome em cada chamado

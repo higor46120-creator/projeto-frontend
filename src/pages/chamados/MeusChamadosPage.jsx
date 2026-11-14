@@ -6,6 +6,8 @@ import { TicketForm } from './TicketForm';
 import { TicketList } from './TicketList';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
+import { ChatBox } from '../suporte/components/ChatBox';
 
 const CHAVE_TEMA = '@helptec:tema';
 
@@ -19,7 +21,9 @@ function lerTemaSalvo() {
 
 export default function MeusChamadosPage() {
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
+  const { logout, usuario } = useContext(AuthContext);
+  // Id de quem está logado: do /usuarios/me ou, enquanto ele não chega, do token
+  const meuId = usuario?.idUsuario ?? obterIdUsuarioLogado();
 
   const [tema, setTema] = useState(lerTemaSalvo);
 
@@ -28,13 +32,16 @@ export default function MeusChamadosPage() {
   const [rascunhos, setRascunhos] = useState([]); // chamados preenchidos, ainda não enviados
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [chatTicket, setChatTicket] = useState(null); // chamado com o chat aberto
 
   const carregarChamados = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       // O api.js já devolve o corpo da resposta
-      const response = await chamadoService.buscar({}, { page: 0, size: 50 });
+      // Só os chamados abertos por quem está logado
+      const filtro = meuId ? { idUsuario: meuId } : {};
+      const response = await chamadoService.buscar(filtro, { page: 0, size: 50 });
       setChamados((response.itens || []).map(chamadoApiParaTela));
     } catch (err) {
       console.error('Erro ao buscar chamados', err);
@@ -42,7 +49,7 @@ export default function MeusChamadosPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [meuId]);
 
   useEffect(() => {
     carregarChamados();
@@ -176,9 +183,19 @@ export default function MeusChamadosPage() {
               tickets={[...rascunhos, ...chamados]}
               onConfirmTicket={handleConfirmTicket}
               onDeletePending={handleDeletePending}
+              onOpenChat={setChatTicket}
             />
           )}
         </main>
+
+        {chatTicket && (
+          <ChatBox
+            ticketId={chatTicket.id_chamado}
+            ticketTitle={chatTicket.descricao}
+            userType="user"
+            onClose={() => setChatTicket(null)}
+          />
+        )}
       </div>
     </div>
   );

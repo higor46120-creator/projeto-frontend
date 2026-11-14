@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import {
   Play,
   CheckCircle,
@@ -14,6 +14,8 @@ import { ChatBox } from './components/ChatBox';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela } from '../../utils/chamadoMapper';
+import { AuthContext } from '../../contexts/AuthContext';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
 import {
   formatarDataHora,
   formatarId,
@@ -21,10 +23,6 @@ import {
   getStatusColor,
   getPriorityColor,
 } from '../../utils/formatters';
-
-// TODO: ligar ao login real (hoje o AuthContext só guarda o token).
-// É o id do técnico de suporte usado em "Iniciar Atendimento" e para saber quais chamados são "meus".
-const ID_SUPORTE_ATUAL = 1;
 
 const COR_TOPBAR = {
   glow: 'bg-purple-500',
@@ -34,6 +32,11 @@ const COR_TOPBAR = {
 
 export default function SupportPage() {
   const [tema, alternarTema] = useTema();
+
+  // Id (UUID) do técnico logado: vem do /usuarios/me ou, enquanto ele não chega, do token.
+  // É usado em "Iniciar Atendimento" e para saber quais chamados são "meus".
+  const { usuario } = useContext(AuthContext);
+  const ID_SUPORTE_ATUAL = usuario?.idUsuario ?? obterIdUsuarioLogado();
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
