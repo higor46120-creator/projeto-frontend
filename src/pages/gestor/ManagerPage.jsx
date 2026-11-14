@@ -39,12 +39,13 @@ import {
   getPriorityColor,
 } from '../../utils/formatters';
 
-const STATUS_LISTA = ['AGUARDANDO_APROVACAO', 'APROVADO', 'EM_ATENDIMENTO', 'RESOLVIDO', 'CANCELADO'];
+const STATUS_LISTA = ['AGUARDANDO_APROVACAO', 'APROVADO', 'REPROVADO', 'EM_ATENDIMENTO', 'RESOLVIDO', 'CANCELADO'];
 const PRIORIDADES = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
 const COR_STATUS = {
   AGUARDANDO_APROVACAO: '#f59e0b',
   APROVADO: '#3b82f6',
+  REPROVADO: '#ef4444',
   EM_ATENDIMENTO: '#a855f7',
   RESOLVIDO: '#10b981',
   CANCELADO: '#6b7280',

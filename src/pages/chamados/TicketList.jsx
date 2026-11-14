@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Mail,
   MessageSquare,
+  MessageCircle,
   Settings
 } from 'lucide-react';
 
@@ -51,7 +52,7 @@ const COLOR_STYLES = {
 
 const STATUS_COLOR = {
   'Aberto': 'blue', 'Em Andamento': 'yellow', 'Aguardando': 'gray',
-  'Resolvido': 'purple', 'Fechado': 'gray', 'Pendente': 'yellow', 
+  'Resolvido': 'purple', 'Fechado': 'gray', 'Pendente': 'yellow', 'Reprovado': 'red',
 };
 
 const PRIORITY_COLOR = {
@@ -61,7 +62,10 @@ const PRIORITY_COLOR = {
 // ==========================================
 // COMPONENTE: CARTÃO INDIVIDUAL DO CHAMADO
 // ==========================================
-function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
+// Chat liberado quando o chamado já tem suporte (em atendimento) ou foi resolvido (para ver o histórico)
+const STATUS_COM_CHAT = ['EM_ATENDIMENTO', 'RESOLVIDO'];
+
+function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
   // Estado local para garantir que cada chamado abra sua própria timeline independentemente
   const [showTimeline, setShowTimeline] = useState(false);
 
@@ -181,6 +185,16 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
                 </button>
               </>
             ) : (
+              <>
+              {onOpenChat && STATUS_COM_CHAT.includes(ticket.status_api) && (
+                <button
+                  onClick={() => onOpenChat(ticket)}
+                  className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-sm font-semibold rounded-lg shadow-sm transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Chat com o Suporte
+                </button>
+              )}
               <button
                 onClick={() => setShowTimeline(!showTimeline)}
                 className="group flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-lg transition-colors"
@@ -189,6 +203,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
                 Histórico
                 {showTimeline ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
+              </>
             )}
           </div>
         </div>
@@ -239,7 +254,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
 // ==========================================
 // COMPONENTE PRINCIPAL: LISTA DE CHAMADOS
 // ==========================================
-export function TicketList({ tickets, onConfirmTicket, onDeletePending }) {
+export function TicketList({ tickets, onConfirmTicket, onDeletePending, onOpenChat }) {
   const stats = [
     { label: 'Total', value: tickets.length, icon: ClipboardList, color: 'gray' },
     { label: 'Abertos', value: tickets.filter((t) => t.status === 'Aberto').length, icon: Inbox, color: 'blue' },
@@ -325,6 +340,7 @@ export function TicketList({ tickets, onConfirmTicket, onDeletePending }) {
             ticket={ticket} 
             onConfirmTicket={onConfirmTicket} 
             onDeletePending={onDeletePending} 
+            onOpenChat={onOpenChat}
           />
         ))}
       </div>
