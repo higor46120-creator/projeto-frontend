@@ -106,6 +106,11 @@ export const chamadoService = {
     return await api.delete(`/api/chamados/${idChamado}`);
   },
 
+  // Suporte logado assume o chamado aprovado (o back usa quem está logado)
+  async iniciarAtendimento(idChamado) {
+    return await api.patch(`/api/chamados/${idChamado}/iniciar`);
+  },
+
   async triar(idChamado, idSuporte) {
     return await api.patch(`/api/chamados/${idChamado}/triagem`, { idSuporte });
   },

@@ -3,6 +3,7 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Users, Sun, Moon, Bell, LogOut } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
+import { AdminNav } from './AdminNav';
 
 const botaoTopo =
   'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10';
@@ -38,6 +39,7 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, tema, onAlternarT
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <AdminNav />
             {acoes}
 
             <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">

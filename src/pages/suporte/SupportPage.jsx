@@ -69,7 +69,7 @@ export default function SupportPage() {
 
   // Fila: aprovados que ainda não têm técnico
   const queueTickets = tickets.filter((t) => t.status_api === 'APROVADO' && !t.id_suporte);
-  const myTickets = tickets.filter((t) => t.id_suporte === ID_SUPORTE_ATUAL);
+  const myTickets = tickets.filter((t) => t.id_suporte != null && String(t.id_suporte) === String(ID_SUPORTE_ATUAL));
   const inProgressTickets = myTickets.filter((t) => t.status_api === 'EM_ATENDIMENTO');
   const resolvedTickets = myTickets.filter((t) => t.status_api === 'RESOLVIDO');
 
@@ -94,7 +94,7 @@ export default function SupportPage() {
 
   const handleStartSupport = (idChamado) =>
     executarAcao(
-      () => chamadoService.triar(idChamado, ID_SUPORTE_ATUAL),
+      () => chamadoService.iniciarAtendimento(idChamado),
       idChamado,
       'Não foi possível iniciar o atendimento.',
     );
@@ -239,7 +239,7 @@ export default function SupportPage() {
                 </div>
               ) : (
                 displayTickets.map((ticket) => {
-                  const isMyTicket = ticket.id_suporte === ID_SUPORTE_ATUAL;
+                  const isMyTicket = ticket.id_suporte != null && String(ticket.id_suporte) === String(ID_SUPORTE_ATUAL);
                   const naFila = ticket.status_api === 'APROVADO' && !ticket.id_suporte;
                   const emAtendimento = isMyTicket && ticket.status_api === 'EM_ATENDIMENTO';
                   const aberto = expandedTicket === ticket.id_chamado;

@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
-  "dev:local": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
-  "dev:remoto": "node scripts/generate-firebase-sw.js --mode dev-remoto && vite --mode dev-remoto",
-  "build": "node scripts/generate-firebase-sw.js --mode production && vite build",
-  "lint": "eslint .",
-  "preview": "vite preview"
-},
+    "dev": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
+    "dev:local": "node scripts/generate-firebase-sw.js --mode dev-local && vite --mode dev-local",
+    "dev:remoto": "node scripts/generate-firebase-sw.js --mode dev-remoto && vite --mode dev-remoto",
+    "build": "node scripts/generate-firebase-sw.js --mode production && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.21.0",
@@ -22,7 +22,8 @@
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
