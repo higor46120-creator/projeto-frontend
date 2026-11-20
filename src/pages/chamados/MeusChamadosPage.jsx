@@ -8,6 +8,7 @@ import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
 import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
 import { ChatBox } from '../suporte/components/ChatBox';
+import { AdminNav } from '../../components/AdminNav';
 
 const CHAVE_TEMA = '@helptec:tema';
 
@@ -129,7 +130,8 @@ export default function MeusChamadosPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Portal do Solicitante</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <AdminNav />
               <span className="px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-600 text-xs font-semibold">
                 Funcionário
               </span>
