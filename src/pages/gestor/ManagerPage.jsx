@@ -39,12 +39,13 @@ import {
   getPriorityColor,
 } from '../../utils/formatters';
 
-const STATUS_LISTA = ['AGUARDANDO_APROVACAO', 'APROVADO', 'EM_ATENDIMENTO', 'RESOLVIDO', 'CANCELADO'];
+const STATUS_LISTA = ['AGUARDANDO_APROVACAO', 'APROVADO', 'REPROVADO', 'EM_ATENDIMENTO', 'RESOLVIDO', 'CANCELADO'];
 const PRIORIDADES = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
 const COR_STATUS = {
   AGUARDANDO_APROVACAO: '#f59e0b',
   APROVADO: '#3b82f6',
+  REPROVADO: '#ef4444',
   EM_ATENDIMENTO: '#a855f7',
   RESOLVIDO: '#10b981',
   CANCELADO: '#6b7280',
@@ -201,12 +202,11 @@ export default function ManagerPage() {
         />
 
         <div className="relative">
-          <TopBar
+                    <TopBar
             titulo="Portal de Gerenciamento"
             subtitulo="Indicadores e Gestão de Atendimentos"
             icone={TrendingUp}
             cor={COR_TOPBAR}
-            perfil="gestor"
             tema={tema}
             onAlternarTema={alternarTema}
             acoes={

@@ -10,6 +10,10 @@ export const userService = {
       params: { page, size },
     });
   },
+  // Dados de quem está logado (nome, e-mail, perfil), identificado pelo token
+  async me() {
+    return await api.get('/usuarios/me');
+  },
 
   async buscarPorId(idUsuario) {
     return await api.get(`/usuarios/${idUsuario}`);

@@ -1,5 +1,10 @@
 // Ponte entre a API de equipamentos e a tela EquipmentManagement.
-// Se algum campo não aparecer ou o salvar der erro 400, é AQUI que se ajusta — só este arquivo.
+// Correspondência dos campos da tela com o back:
+//   cod_patrimonio -> patrimonio   (/api/equipamentos)
+//   numero_maquina -> id           (/api/equipamentos, gerado pelo banco; só exibição)
+//   sala           -> nome da sala (/api/salas; o equipamento guarda idSala — ver equipamentoService.js)
+//   setor          -> area         (/api/equipamentos)
+//   descricao      -> descricao    (/api/equipamentos)
 
 function normalizar(valor) {
   return String(valor ?? '')
@@ -22,29 +27,29 @@ const STATUS_TELA = {
 };
 
 // API -> tela
+// (o campo "sala" chega preenchido pelo equipamentoService, que troca idSala pelo nome)
 export function equipamentoApiParaTela(e) {
   return {
-    // AJUSTAR: nomes abaixo são suposições (não sei como a API devolve esses campos)
-    id: e.idEquipamento ?? e.id,
+    id: e.id,
     tipo: texto(e.tipo),
-    cod_patrimonio: e.codPatrimonio ?? e.patrimonio ?? '',
-    numero_maquina: e.numeroMaquina ?? '',
+    cod_patrimonio: e.patrimonio ?? '',
+    numero_maquina: e.id != null ? String(e.id) : '',
     sala: texto(e.sala),
-    setor: texto(e.setor),
+    setor: e.area ?? '',
     status: STATUS_TELA[normalizar(e.status)] ?? e.status ?? '',
     descricao: e.descricao ?? '',
   };
 }
 
 // tela -> API (corpo do POST/PUT /api/equipamentos)
-// AJUSTAR: o formato abaixo é uma suposição; confira no Swagger do backend.
+// "sala" segue como texto aqui; o equipamentoService troca por idSala antes de enviar.
+// numero_maquina não é enviado: é o id, que o banco gera.
 export function equipamentoTelaParaApi(f) {
   return {
     tipo: f.tipo,
-    codPatrimonio: f.cod_patrimonio,
-    numeroMaquina: f.numero_maquina,
+    patrimonio: f.cod_patrimonio,
     sala: f.sala,
-    setor: f.setor,
+    area: f.setor,
     status: normalizar(f.status).toUpperCase(), // OPERACIONAL, MANUTENCAO, INATIVO
     descricao: f.descricao,
   };

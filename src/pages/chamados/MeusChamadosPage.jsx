@@ -1,23 +1,16 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, User, ChevronDown, FileText, List } from 'lucide-react';
+import { Sun, Moon, LogOut, Mail, Users, Bell, FileText, List } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { TicketForm } from './TicketForm';
 import { TicketList } from './TicketList';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
+import { ChatBox } from '../suporte/components/ChatBox';
+import { AdminNav } from '../../components/AdminNav';
 
 const CHAVE_TEMA = '@helptec:tema';
-
-// Atalhos do menu do topo
-const ITENS_MENU = [
-  { rota: '/dashboard', rotulo: 'Dashboard' },
-  { rota: '/chamados', rotulo: 'Todos os Chamados' },
-  { rota: '/aprovador', rotulo: 'Área do Aprovador' },
-  { rota: '/suporte', rotulo: 'Área do Suporte' },
-  { rota: '/candidato', rotulo: 'Candidatos' },
-  { rota: '/webmail', rotulo: 'Webmail' },
-];
 
 function lerTemaSalvo() {
   try {
@@ -29,23 +22,27 @@ function lerTemaSalvo() {
 
 export default function MeusChamadosPage() {
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
+  const { logout, usuario } = useContext(AuthContext);
+  // Id de quem está logado: do /usuarios/me ou, enquanto ele não chega, do token
+  const meuId = usuario?.idUsuario ?? obterIdUsuarioLogado();
 
   const [tema, setTema] = useState(lerTemaSalvo);
-  const [menuAberto, setMenuAberto] = useState(false);
 
   const [aba, setAba] = useState('novo'); // 'novo' | 'lista'
   const [chamados, setChamados] = useState([]);
   const [rascunhos, setRascunhos] = useState([]); // chamados preenchidos, ainda não enviados
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [chatTicket, setChatTicket] = useState(null); // chamado com o chat aberto
 
   const carregarChamados = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       // O api.js já devolve o corpo da resposta
-      const response = await chamadoService.buscar({}, { page: 0, size: 50 });
+      // Só os chamados abertos por quem está logado
+      const filtro = meuId ? { idUsuario: meuId } : {};
+      const response = await chamadoService.buscar(filtro, { page: 0, size: 50 });
       setChamados((response.itens || []).map(chamadoApiParaTela));
     } catch (err) {
       console.error('Erro ao buscar chamados', err);
@@ -53,7 +50,7 @@ export default function MeusChamadosPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [meuId]);
 
   useEffect(() => {
     carregarChamados();
@@ -71,7 +68,7 @@ export default function MeusChamadosPage() {
 
   const handleSair = () => {
     logout();
-    navigate('/cadastro');
+    navigate('/login');
   };
 
   // Formulário preenchido -> vira rascunho na lista
@@ -98,7 +95,11 @@ export default function MeusChamadosPage() {
       await carregarChamados();
     } catch (err) {
       console.error('Erro ao enviar chamado', err);
-      setError('Não foi possível enviar o chamado. Ele continua como rascunho.');
+      setError(
+        err.mensagemUsuario
+          ? `${err.mensagemUsuario} Ele continua como rascunho.`
+          : 'Não foi possível enviar o chamado. Ele continua como rascunho.'
+      );
     }
   };
 
@@ -129,44 +130,28 @@ export default function MeusChamadosPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Portal do Solicitante</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
-                {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-
+            <div className="flex flex-wrap items-center gap-2">
+              <AdminNav />
               <span className="px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-600 text-xs font-semibold">
                 Funcionário
               </span>
 
+              <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">
+                <Users className="w-4 h-4" />
+              </button>
+              <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
+                <Mail className="w-4 h-4" />
+              </button>
+              <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
+                {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button className={botaoTopo} title="Notificações">
+                <Bell className="w-4 h-4" />
+              </button>
               <button onClick={handleSair} className={botaoTopo}>
                 <LogOut className="w-4 h-4" />
                 Sair
               </button>
-
-              <div className="relative">
-                <button onClick={() => setMenuAberto((aberto) => !aberto)} className={botaoTopo}>
-                  <User className="w-4 h-4" />
-                  MENU
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-
-                {menuAberto && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuAberto(false)} />
-                    <div className="absolute right-0 mt-2 w-52 z-20 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b26] shadow-xl py-1">
-                      {ITENS_MENU.map((item) => (
-                        <button
-                          key={item.rota}
-                          onClick={() => navigate(item.rota)}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
-                        >
-                          {item.rotulo}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </header>
@@ -200,9 +185,19 @@ export default function MeusChamadosPage() {
               tickets={[...rascunhos, ...chamados]}
               onConfirmTicket={handleConfirmTicket}
               onDeletePending={handleDeletePending}
+              onOpenChat={setChatTicket}
             />
           )}
         </main>
+
+        {chatTicket && (
+          <ChatBox
+            ticketId={chatTicket.id_chamado}
+            ticketTitle={chatTicket.descricao}
+            userType="user"
+            onClose={() => setChatTicket(null)}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import {
   Play,
   CheckCircle,
@@ -14,6 +14,8 @@ import { ChatBox } from './components/ChatBox';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela } from '../../utils/chamadoMapper';
+import { AuthContext } from '../../contexts/AuthContext';
+import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
 import {
   formatarDataHora,
   formatarId,
@@ -21,10 +23,6 @@ import {
   getStatusColor,
   getPriorityColor,
 } from '../../utils/formatters';
-
-// TODO: ligar ao login real (hoje o AuthContext só guarda o token).
-// É o id do técnico de suporte usado em "Iniciar Atendimento" e para saber quais chamados são "meus".
-const ID_SUPORTE_ATUAL = 1;
 
 const COR_TOPBAR = {
   glow: 'bg-purple-500',
@@ -34,6 +32,11 @@ const COR_TOPBAR = {
 
 export default function SupportPage() {
   const [tema, alternarTema] = useTema();
+
+  // Id (UUID) do técnico logado: vem do /usuarios/me ou, enquanto ele não chega, do token.
+  // É usado em "Iniciar Atendimento" e para saber quais chamados são "meus".
+  const { usuario } = useContext(AuthContext);
+  const ID_SUPORTE_ATUAL = usuario?.idUsuario ?? obterIdUsuarioLogado();
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +69,7 @@ export default function SupportPage() {
 
   // Fila: aprovados que ainda não têm técnico
   const queueTickets = tickets.filter((t) => t.status_api === 'APROVADO' && !t.id_suporte);
-  const myTickets = tickets.filter((t) => t.id_suporte === ID_SUPORTE_ATUAL);
+  const myTickets = tickets.filter((t) => t.id_suporte != null && String(t.id_suporte) === String(ID_SUPORTE_ATUAL));
   const inProgressTickets = myTickets.filter((t) => t.status_api === 'EM_ATENDIMENTO');
   const resolvedTickets = myTickets.filter((t) => t.status_api === 'RESOLVIDO');
 
@@ -91,7 +94,7 @@ export default function SupportPage() {
 
   const handleStartSupport = (idChamado) =>
     executarAcao(
-      () => chamadoService.triar(idChamado, ID_SUPORTE_ATUAL),
+      () => chamadoService.iniciarAtendimento(idChamado),
       idChamado,
       'Não foi possível iniciar o atendimento.',
     );
@@ -133,12 +136,11 @@ export default function SupportPage() {
         />
 
         <div className="relative">
-          <TopBar
+                    <TopBar
             titulo="Área do Suporte Técnico"
             subtitulo="Atendimento de chamados"
             icone={Package}
             cor={COR_TOPBAR}
-            perfil="suporte"
             tema={tema}
             onAlternarTema={alternarTema}
             acoes={
@@ -237,7 +239,7 @@ export default function SupportPage() {
                 </div>
               ) : (
                 displayTickets.map((ticket) => {
-                  const isMyTicket = ticket.id_suporte === ID_SUPORTE_ATUAL;
+                  const isMyTicket = ticket.id_suporte != null && String(ticket.id_suporte) === String(ID_SUPORTE_ATUAL);
                   const naFila = ticket.status_api === 'APROVADO' && !ticket.id_suporte;
                   const emAtendimento = isMyTicket && ticket.status_api === 'EM_ATENDIMENTO';
                   const aberto = expandedTicket === ticket.id_chamado;
