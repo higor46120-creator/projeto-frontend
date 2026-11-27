@@ -6,7 +6,7 @@ import { ehAdmin, rotaDoPerfil } from '../../utils/perfis';
 // Protege uma página:
 //  - sem login: vai para o login (/cadastro)
 //  - com "perfis": só esses perfis entram; os outros voltam para a própria área
-//  - sem "perfis": qualquer conta logada entra (ex.: webmail, candidatos)
+//  - sem "perfis": qualquer conta logada entra (ex.: candidatos)
 //  - ADMIN entra em todas as páginas
 export const PrivateRoute = ({ children, perfis }) => {
   const { isAuthenticated, perfil, carregandoUsuario, erroUsuario, recarregarUsuario, logout } =

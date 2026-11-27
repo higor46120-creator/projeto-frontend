@@ -37,5 +37,4 @@ export const AREAS_ADMIN = [
   { nome: 'Suporte', rota: '/suporte' },
   { nome: 'Funcionário (Meus Chamados)', rota: '/meus-chamados' },
   { nome: 'Candidatos', rota: '/candidato' },
-  { nome: 'Webmail', rota: '/webmail' },
 ];

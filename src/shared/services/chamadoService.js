@@ -11,40 +11,57 @@ function erroParaUsuario(mensagem) {
   return erro;
 }
 
-// Procura a sala pelo nome (igual, sem diferenciar maiúsculas/minúsculas)
-async function obterIdSala(nome) {
-  const nomeLimpo = String(nome ?? '').trim();
-  if (!nomeLimpo) return null;
-
-  const resposta = await api.get('/api/salas', {
-    params: { nome: nomeLimpo, page: 0, size: 100 },
-  });
-  const sala = (resposta.itens || []).find(
-    (s) => String(s.nome ?? '').trim().toLowerCase() === nomeLimpo.toLowerCase()
-  );
-  if (!sala) {
-    throw erroParaUsuario(`A sala "${nomeLimpo}" não está cadastrada. Confira o nome da sala.`);
-  }
-  return sala.idSala;
+// Compara textos sem diferenciar maiúsculas/minúsculas nem espaços nas pontas
+export function mesmoTexto(a, b) {
+  return String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
 }
 
-// Troca o nome da sala pelo idSala e acrescenta o idUsuario (quem está abrindo o chamado).
-// O equipamento vai como texto (tipo + patrimônio): o back procura pelo patrimônio e,
-// se ainda não existir, cadastra o equipamento sozinho — o funcionário não depende do suporte.
+// Salas e equipamentos já cadastrados (só leitura: daqui nada é criado no banco)
+async function listarSalas() {
+  const resposta = await api.get('/api/salas', { params: { page: 0, size: 1000 } });
+  return resposta?.itens || [];
+}
+
+async function listarEquipamentos() {
+  const resposta = await api.get('/api/equipamentos', { params: { page: 0, size: 1000 } });
+  return resposta?.itens || [];
+}
+
+// Troca o nome da sala e o patrimônio pelos ids do banco (idSala, idEquipamento) e
+// acrescenta o idUsuario (quem está abrindo o chamado).
+// O que o funcionário digitou e NÃO existe no banco não é cadastrado (nenhum POST em
+// /api/salas ou /api/equipamentos): vai só como texto no fim da descrição, para o suporte saber.
 async function prepararChamado(dados) {
   const idUsuario = obterIdUsuarioLogado();
   if (!idUsuario) {
     throw erroParaUsuario('Não foi possível identificar o usuário logado. Faça login novamente.');
   }
 
-  const { sala, equipamento, codPatrimonio, ...resto } = dados;
-  const idSala = await obterIdSala(sala);
+  const { sala, equipamento, codPatrimonio, descricao, ...resto } = dados;
+  const salaTexto = String(sala ?? '').trim();
+  const patrimonioTexto = String(codPatrimonio ?? '').trim();
+  const equipamentoTexto = String(equipamento ?? '').trim();
+
+  const [salas, equipamentos] = await Promise.all([
+    salaTexto ? listarSalas() : [],
+    patrimonioTexto ? listarEquipamentos() : [],
+  ]);
+  const salaDoBanco = salas.find((s) => mesmoTexto(s.nome, salaTexto));
+  const equipamentoDoBanco = equipamentos.find((e) => mesmoTexto(e.patrimonio, patrimonioTexto));
+
+  const informados = [];
+  if (salaTexto && !salaDoBanco) informados.push(`Sala informada: ${salaTexto}`);
+  if (patrimonioTexto && !equipamentoDoBanco) informados.push(`Patrimônio informado: ${patrimonioTexto}`);
+  if (equipamentoTexto && !equipamentoDoBanco) informados.push(`Equipamento: ${equipamentoTexto}`);
+
   return {
     ...resto,
+    descricao: informados.length ? `${descricao ?? ''}\n\n${informados.join('\n')}` : descricao,
     idUsuario,
-    idSala,
-    equipamento: String(equipamento ?? '').trim(),
-    codPatrimonio: String(codPatrimonio ?? '').trim(),
+    idSala: salaDoBanco?.idSala ?? null,
+    idEquipamento: equipamentoDoBanco?.id ?? null,
+    equipamento: equipamentoTexto,
+    codPatrimonio: patrimonioTexto,
   };
 }
 
@@ -90,6 +107,16 @@ export const chamadoService = {
       params: { ...filtro, ...pageRequest },
     });
     return await anexarDetalhes(pagina);
+  },
+
+  // Sugestões dos campos Sala e Patrimônio do formulário: { salas, equipamentos }.
+  // Se uma lista falhar, ela volta vazia e o campo continua aceitando texto livre.
+  async opcoesDoFormulario() {
+    const [salas, equipamentos] = await Promise.allSettled([listarSalas(), listarEquipamentos()]);
+    return {
+      salas: salas.status === 'fulfilled' ? salas.value : [],
+      equipamentos: equipamentos.status === 'fulfilled' ? equipamentos.value : [],
+    };
   },
 
   async criar(dadosChamado) {

@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, Mail, Users, Bell, FileText, List } from 'lucide-react';
+import { Sun, Moon, LogOut, Users, Bell, FileText, List } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { TicketForm } from './TicketForm';
 import { TicketList } from './TicketList';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
 import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
-import { ChatBox } from '../suporte/components/ChatBox';
 import { AdminNav } from '../../components/AdminNav';
 
 const CHAVE_TEMA = '@helptec:tema';
@@ -33,7 +32,6 @@ export default function MeusChamadosPage() {
   const [rascunhos, setRascunhos] = useState([]); // chamados preenchidos, ainda não enviados
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [chatTicket, setChatTicket] = useState(null); // chamado com o chat aberto
 
   const carregarChamados = useCallback(async () => {
     setLoading(true);
@@ -139,9 +137,6 @@ export default function MeusChamadosPage() {
               <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">
                 <Users className="w-4 h-4" />
               </button>
-              <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
-                <Mail className="w-4 h-4" />
-              </button>
               <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
                 {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
@@ -185,19 +180,10 @@ export default function MeusChamadosPage() {
               tickets={[...rascunhos, ...chamados]}
               onConfirmTicket={handleConfirmTicket}
               onDeletePending={handleDeletePending}
-              onOpenChat={setChatTicket}
             />
           )}
         </main>
 
-        {chatTicket && (
-          <ChatBox
-            ticketId={chatTicket.id_chamado}
-            ticketTitle={chatTicket.descricao}
-            userType="user"
-            onClose={() => setChatTicket(null)}
-          />
-        )}
       </div>
     </div>
   );
