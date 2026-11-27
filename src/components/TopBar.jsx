@@ -1,14 +1,15 @@
 // src/components/TopBar.jsx
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Users, Sun, Moon, Bell, LogOut } from 'lucide-react';
+import { Users, Sun, Moon, Bell, LogOut } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
+import { AdminNav } from './AdminNav';
 
 const botaoTopo =
   'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10';
 
 // Topo das áreas (Aprovador, Suporte, Gestor). Cada conta só tem a própria área,
-// então aqui ficam só os atalhos comuns a todos: Candidatos, Webmail, tema, notificações e Sair.
+// então aqui ficam só os atalhos comuns a todos: Candidatos, tema, notificações e Sair.
 export function TopBar({ titulo, subtitulo, icone: Icone, cor, tema, onAlternarTema, acoes }) {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
@@ -38,13 +39,11 @@ export function TopBar({ titulo, subtitulo, icone: Icone, cor, tema, onAlternarT
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <AdminNav />
             {acoes}
 
             <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">
               <Users className="w-4 h-4" />
-            </button>
-            <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
-              <Mail className="w-4 h-4" />
             </button>
             <button onClick={onAlternarTema} className={botaoTopo} title="Alternar tema">
               {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

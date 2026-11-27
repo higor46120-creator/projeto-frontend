@@ -12,7 +12,6 @@ import ApproverPage from './pages/aprovador/ApproverPage';
 import CandidatePage from './pages/candidato/CandidatePage';
 import MeusChamadosPage from './pages/chamados/MeusChamadosPage';
 import SupportPage from './pages/suporte/SupportPage';
-import WebmailPage from './pages/webmail/WebmailPage';
 import ManagerPage from './pages/gestor/ManagerPage';
 import { PERFIL, rotaDoPerfil } from './utils/perfis';
 
@@ -156,14 +155,6 @@ function App() {
           />
 
           {/* Páginas de todas as contas (sem "perfis") */}
-          <Route
-            path="/webmail"
-            element={
-              <PrivateRoute>
-                <WebmailPage />
-              </PrivateRoute>
-            }
-          />
           <Route
             path="/candidato"
             element={

@@ -25,3 +25,16 @@ export function rotaDoPerfil(perfil) {
 export function ehGestor(perfil) {
   return perfil === PERFIL.GESTOR || perfil === PERFIL.ADMIN;
 }
+
+export function ehAdmin(perfil) {
+  return perfil === PERFIL.ADMIN;
+}
+
+// Todas as áreas do sistema: o ADMIN pode abrir qualquer uma (menu "Admin" no topo)
+export const AREAS_ADMIN = [
+  { nome: 'Gestor', rota: '/gestor' },
+  { nome: 'Aprovador', rota: '/aprovador' },
+  { nome: 'Suporte', rota: '/suporte' },
+  { nome: 'Funcionário (Meus Chamados)', rota: '/meus-chamados' },
+  { nome: 'Candidatos', rota: '/candidato' },
+];

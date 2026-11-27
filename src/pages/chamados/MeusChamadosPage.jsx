@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, Mail, Users, Bell, FileText, List } from 'lucide-react';
+import { Sun, Moon, LogOut, Users, Bell, FileText, List } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { TicketForm } from './TicketForm';
 import { TicketList } from './TicketList';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela, chamadoTelaParaApi } from '../../utils/chamadoMapper';
 import { obterIdUsuarioLogado } from '../../utils/usuarioLogado';
-import { ChatBox } from '../suporte/components/ChatBox';
+import { AdminNav } from '../../components/AdminNav';
 
 const CHAVE_TEMA = '@helptec:tema';
 
@@ -32,7 +32,6 @@ export default function MeusChamadosPage() {
   const [rascunhos, setRascunhos] = useState([]); // chamados preenchidos, ainda não enviados
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [chatTicket, setChatTicket] = useState(null); // chamado com o chat aberto
 
   const carregarChamados = useCallback(async () => {
     setLoading(true);
@@ -129,16 +128,14 @@ export default function MeusChamadosPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Portal do Solicitante</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <AdminNav />
               <span className="px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-600 text-xs font-semibold">
                 Funcionário
               </span>
 
               <button onClick={() => navigate('/candidato')} className={botaoTopo} title="Candidatos">
                 <Users className="w-4 h-4" />
-              </button>
-              <button onClick={() => navigate('/webmail')} className={botaoTopo} title="Webmail">
-                <Mail className="w-4 h-4" />
               </button>
               <button onClick={alternarTema} className={botaoTopo} title="Alternar tema">
                 {tema === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -183,19 +180,10 @@ export default function MeusChamadosPage() {
               tickets={[...rascunhos, ...chamados]}
               onConfirmTicket={handleConfirmTicket}
               onDeletePending={handleDeletePending}
-              onOpenChat={setChatTicket}
             />
           )}
         </main>
 
-        {chatTicket && (
-          <ChatBox
-            ticketId={chatTicket.id_chamado}
-            ticketTitle={chatTicket.descricao}
-            userType="user"
-            onClose={() => setChatTicket(null)}
-          />
-        )}
       </div>
     </div>
   );

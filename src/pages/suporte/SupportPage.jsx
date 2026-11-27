@@ -5,12 +5,10 @@ import {
   Clock,
   AlertTriangle,
   ChevronDown,
-  MessageCircle,
   Package,
 } from 'lucide-react';
 import { TopBar } from '../../components/TopBar';
 import { useTema } from '../../utils/useTema';
-import { ChatBox } from './components/ChatBox';
 import { EquipmentManagement } from './components/EquipmentManagement';
 import { chamadoService } from '../../shared/services/chamadoService';
 import { chamadoApiParaTela } from '../../utils/chamadoMapper';
@@ -44,7 +42,6 @@ export default function SupportPage() {
   const [actingId, setActingId] = useState(null);
 
   const [expandedTicket, setExpandedTicket] = useState(null);
-  const [chatTicket, setChatTicket] = useState(null);
   const [showEquipmentManagement, setShowEquipmentManagement] = useState(false);
   const [filterStatus, setFilterStatus] = useState('queue');
 
@@ -69,7 +66,7 @@ export default function SupportPage() {
 
   // Fila: aprovados que ainda não têm técnico
   const queueTickets = tickets.filter((t) => t.status_api === 'APROVADO' && !t.id_suporte);
-  const myTickets = tickets.filter((t) => t.id_suporte === ID_SUPORTE_ATUAL);
+  const myTickets = tickets.filter((t) => t.id_suporte != null && String(t.id_suporte) === String(ID_SUPORTE_ATUAL));
   const inProgressTickets = myTickets.filter((t) => t.status_api === 'EM_ATENDIMENTO');
   const resolvedTickets = myTickets.filter((t) => t.status_api === 'RESOLVIDO');
 
@@ -94,7 +91,7 @@ export default function SupportPage() {
 
   const handleStartSupport = (idChamado) =>
     executarAcao(
-      () => chamadoService.triar(idChamado, ID_SUPORTE_ATUAL),
+      () => chamadoService.iniciarAtendimento(idChamado),
       idChamado,
       'Não foi possível iniciar o atendimento.',
     );
@@ -112,14 +109,6 @@ export default function SupportPage() {
 
   return (
     <div className={tema === 'dark' ? 'dark' : ''}>
-      {chatTicket && (
-        <ChatBox
-          ticketId={chatTicket.id_chamado}
-          ticketTitle={chatTicket.descricao}
-          userType="support"
-          onClose={() => setChatTicket(null)}
-        />
-      )}
       {showEquipmentManagement && (
         <EquipmentManagement onClose={() => setShowEquipmentManagement(false)} />
       )}
@@ -239,7 +228,7 @@ export default function SupportPage() {
                 </div>
               ) : (
                 displayTickets.map((ticket) => {
-                  const isMyTicket = ticket.id_suporte === ID_SUPORTE_ATUAL;
+                  const isMyTicket = ticket.id_suporte != null && String(ticket.id_suporte) === String(ID_SUPORTE_ATUAL);
                   const naFila = ticket.status_api === 'APROVADO' && !ticket.id_suporte;
                   const emAtendimento = isMyTicket && ticket.status_api === 'EM_ATENDIMENTO';
                   const aberto = expandedTicket === ticket.id_chamado;
@@ -322,13 +311,6 @@ export default function SupportPage() {
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                     Marcar como Resolvido
-                                  </button>
-                                  <button
-                                    onClick={() => setChatTicket(ticket)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-lg shadow-[0_0_18px_-4px_rgba(59,130,246,0.6)] hover:shadow-[0_0_26px_-4px_rgba(59,130,246,0.8)] transition-all font-medium"
-                                  >
-                                    <MessageCircle className="w-4 h-4" />
-                                    Chat com Funcionário
                                   </button>
                                 </>
                               )}

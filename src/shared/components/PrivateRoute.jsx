@@ -1,12 +1,13 @@
 import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
-import { rotaDoPerfil } from '../../utils/perfis';
+import { ehAdmin, rotaDoPerfil } from '../../utils/perfis';
 
 // Protege uma página:
 //  - sem login: vai para o login (/cadastro)
 //  - com "perfis": só esses perfis entram; os outros voltam para a própria área
-//  - sem "perfis": qualquer conta logada entra (ex.: webmail, candidatos)
+//  - sem "perfis": qualquer conta logada entra (ex.: candidatos)
+//  - ADMIN entra em todas as páginas
 export const PrivateRoute = ({ children, perfis }) => {
   const { isAuthenticated, perfil, carregandoUsuario, erroUsuario, recarregarUsuario, logout } =
     useContext(AuthContext);
@@ -47,7 +48,7 @@ export const PrivateRoute = ({ children, perfis }) => {
     );
   }
 
-  if (perfis && !perfis.includes(perfil)) {
+  if (perfis && !ehAdmin(perfil) && !perfis.includes(perfil)) {
     return <Navigate to={rotaDoPerfil(perfil)} replace />;
   }
 

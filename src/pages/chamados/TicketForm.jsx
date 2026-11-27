@@ -21,6 +21,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { userService } from '../../shared/services/userService';
+import { chamadoService, mesmoTexto } from '../../shared/services/chamadoService';
 import { obterUsuarioLogado } from '../../utils/usuarioLogado';
 
 // Paleta alinhada à identidade visual da FIEC: cinza, roxo, azul, amarelo e vermelho.
@@ -202,6 +203,45 @@ export function TicketForm({ onSubmit }) {
     cod_patrimonio: '',
   });
   const [selectedEquipment, setSelectedEquipment] = useState('');
+
+  // Salas e equipamentos já cadastrados, para as sugestões dos campos Sala e Patrimônio.
+  // O funcionário também pode digitar algo que não está na lista (isso não é cadastrado no banco).
+  const [salasCadastradas, setSalasCadastradas] = useState([]);
+  const [equipamentosCadastrados, setEquipamentosCadastrados] = useState([]);
+  const [opcoesCarregadas, setOpcoesCarregadas] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    chamadoService.opcoesDoFormulario().then(({ salas, equipamentos }) => {
+      if (!ativo) return;
+      setSalasCadastradas(salas);
+      setEquipamentosCadastrados(equipamentos.filter((e) => String(e.patrimonio ?? '').trim()));
+      setOpcoesCarregadas(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const salaNaLista = salasCadastradas.some((s) => mesmoTexto(s.nome, formData.sala));
+  const patrimonioNaLista = equipamentosCadastrados.some((e) =>
+    mesmoTexto(e.patrimonio, formData.cod_patrimonio),
+  );
+
+  // Ao escolher um patrimônio da lista, já marca o tipo de equipamento (se for um dos tipos da grade)
+  const handlePatrimonioChange = (valor) => {
+    const equipamento = equipamentosCadastrados.find((e) => mesmoTexto(e.patrimonio, valor));
+    const tipo = equipamento
+      ? equipmentOptions.find((o) => mesmoTexto(o.name, equipamento.tipo) || mesmoTexto(o.id, equipamento.tipo))
+      : null;
+    if (tipo) setSelectedEquipment(tipo.name);
+    setFormData((atual) => ({
+      ...atual,
+      cod_patrimonio: valor,
+      ...(tipo ? { equipamento: tipo.name } : {}),
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -314,6 +354,8 @@ export function TicketForm({ onSubmit }) {
                 <input
                   type="text"
                   id="sala"
+                  list="lista-salas"
+                  autoComplete="off"
                   required
                   value={formData.sala}
                   onChange={(e) =>
@@ -323,8 +365,18 @@ export function TicketForm({ onSubmit }) {
                     })
                   }
                   className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-[#1a1b26] dark:text-gray-100 dark:placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-600 transition-shadow"
-                  placeholder="Ex: Sala 201"
+                  placeholder="Escolha da lista ou digite"
                 />
+                <datalist id="lista-salas">
+                  {salasCadastradas.map((s) => (
+                    <option key={s.idSala} value={s.nome} />
+                  ))}
+                </datalist>
+                {opcoesCarregadas && formData.sala.trim() && !salaNaLista && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    Sala fora da lista: vai só como informação no chamado.
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -336,17 +388,26 @@ export function TicketForm({ onSubmit }) {
                 <input
                   type="text"
                   id="cod_patrimonio"
+                  list="lista-patrimonios"
+                  autoComplete="off"
                   required
                   value={formData.cod_patrimonio}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      cod_patrimonio: e.target.value,
-                    })
-                  }
+                  onChange={(e) => handlePatrimonioChange(e.target.value)}
                   className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-[#1a1b26] dark:text-gray-100 dark:placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-600 transition-shadow"
-                  placeholder="Ex: PAT-001234 / Máquina 05"
+                  placeholder="Escolha da lista ou digite"
                 />
+                <datalist id="lista-patrimonios">
+                  {equipamentosCadastrados.map((e) => (
+                    <option key={e.id} value={e.patrimonio}>
+                      {[e.tipo, e.nome].filter(Boolean).join(' — ')}
+                    </option>
+                  ))}
+                </datalist>
+                {opcoesCarregadas && formData.cod_patrimonio.trim() && !patrimonioNaLista && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    Patrimônio fora da lista: vai só como informação no chamado.
+                  </p>
+                )}
               </div>
             </div>
           </div>
