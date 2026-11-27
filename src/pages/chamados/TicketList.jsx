@@ -13,9 +13,7 @@ import {
   History,
   ChevronDown,
   ChevronUp,
-  Mail,
   MessageSquare,
-  MessageCircle,
   Settings
 } from 'lucide-react';
 
@@ -62,10 +60,7 @@ const PRIORITY_COLOR = {
 // ==========================================
 // COMPONENTE: CARTÃO INDIVIDUAL DO CHAMADO
 // ==========================================
-// Chat liberado quando o chamado já tem suporte (em atendimento) ou foi resolvido (para ver o histórico)
-const STATUS_COM_CHAT = ['EM_ATENDIMENTO', 'RESOLVIDO'];
-
-function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
+function TicketCard({ ticket, onConfirmTicket, onDeletePending }) {
   // Estado local para garantir que cada chamado abra sua própria timeline independentemente
   const [showTimeline, setShowTimeline] = useState(false);
 
@@ -78,8 +73,6 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
   // Mapeamento dinâmico de estilos para a Trilha de Auditoria (Omnichannel)
   const getEventStyle = (tipo) => {
     switch (tipo) {
-      case 'email':
-        return { icon: Mail, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30', ring: 'ring-blue-50 dark:ring-blue-900/10' };
       case 'nota':
         return { icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30', ring: 'ring-purple-50 dark:ring-purple-900/10' };
       case 'sistema':
@@ -91,7 +84,6 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
   // Mock de dados da Trilha de Auditoria
   const mockHistory = [
     { id: 1, tipo: 'sistema', action: 'Chamado Aberto no Portal', date: ticket.data_abertura, user: ticket.solicitante_nome || 'Não identificado' },
-    { id: 2, tipo: 'email', action: 'E-mail recebido com anexos de log.', date: new Date(Date.now() - 3600000).toISOString(), user: 'cliente@empresa.com' },
     { id: 3, tipo: 'nota', action: 'Análise técnica iniciada pelo suporte.', date: new Date().toISOString(), user: 'Equipe de Suporte' },
   ];
 
@@ -186,15 +178,6 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
               </>
             ) : (
               <>
-              {onOpenChat && STATUS_COM_CHAT.includes(ticket.status_api) && (
-                <button
-                  onClick={() => onOpenChat(ticket)}
-                  className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-sm font-semibold rounded-lg shadow-sm transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Chat com o Suporte
-                </button>
-              )}
               <button
                 onClick={() => setShowTimeline(!showTimeline)}
                 className="group flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-lg transition-colors"
@@ -233,11 +216,6 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
                         <span>{formatarData(evento.date)}</span>
                         <span>•</span>
                         <span className="truncate max-w-[200px]">Por: {evento.user}</span>
-                        {evento.tipo === 'email' && (
-                          <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ml-auto">
-                            Via E-mail
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -254,7 +232,7 @@ function TicketCard({ ticket, onConfirmTicket, onDeletePending, onOpenChat }) {
 // ==========================================
 // COMPONENTE PRINCIPAL: LISTA DE CHAMADOS
 // ==========================================
-export function TicketList({ tickets, onConfirmTicket, onDeletePending, onOpenChat }) {
+export function TicketList({ tickets, onConfirmTicket, onDeletePending }) {
   const stats = [
     { label: 'Total', value: tickets.length, icon: ClipboardList, color: 'gray' },
     { label: 'Abertos', value: tickets.filter((t) => t.status === 'Aberto').length, icon: Inbox, color: 'blue' },
@@ -340,7 +318,6 @@ export function TicketList({ tickets, onConfirmTicket, onDeletePending, onOpenCh
             ticket={ticket} 
             onConfirmTicket={onConfirmTicket} 
             onDeletePending={onDeletePending} 
-            onOpenChat={onOpenChat}
           />
         ))}
       </div>

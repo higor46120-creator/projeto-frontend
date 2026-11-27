@@ -22,6 +22,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTema } from '../../utils/useTema';
 import { AuthContext } from '../../contexts/AuthContext';
 import { ehGestor, rotaDoPerfil } from '../../utils/perfis';
+
+// Candidatos só com e-mail institucional da FIEC (o back confere a mesma regra)
+const EMAIL_FIEC = /^[^\s@]+@fiec\.edu\.br$/i;
 import { candidatoService } from '../../shared/services/candidatoService';
 
 
@@ -150,6 +153,10 @@ export default function CandidatePage() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editForm || salvando) return;
+    if (!EMAIL_FIEC.test(String(editForm.email ?? '').trim())) {
+      setErroForm('Use um e-mail @fiec.edu.br.');
+      return;
+    }
     setSalvando(true);
     setErroForm('');
     try {
@@ -496,9 +503,12 @@ export default function CandidatePage() {
                   />
                 </Field>
 
-                <Field label="E-mail">
+                <Field label="E-mail (@fiec.edu.br)">
                   <input
                     type="email"
+                    placeholder="nome@fiec.edu.br"
+                    pattern="[^\s@]+@[fF][iI][eE][cC]\.[eE][dD][uU]\.[bB][rR]"
+                    title="Use um e-mail @fiec.edu.br"
                     value={editForm.email}
                     onChange={(e) =>
                       setEditForm({

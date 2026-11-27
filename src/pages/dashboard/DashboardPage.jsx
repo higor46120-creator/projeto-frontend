@@ -5,7 +5,6 @@ import {
   CheckCircle,
   Headphones,
   User,
-  Mail,
   TrendingUp,
 } from 'lucide-react';
 
@@ -45,13 +44,6 @@ const PAGINAS = [
     descricao: 'Perfis e dados dos candidatos',
     icone: User,
     cor: 'from-rose-500 to-pink-600',
-  },
-  {
-    rota: '/webmail',
-    titulo: 'Webmail',
-    descricao: 'Caixa de entrada, enviados e rascunhos',
-    icone: Mail,
-    cor: 'from-indigo-500 to-violet-600',
   },
   {
     rota: '/gestor',
